@@ -36,7 +36,7 @@ def extraer_codigos_pdf(pdf_bytes):
 # TÍTULO
 # ----------------------------
 st.title("📘 Comparador de Cursos PDF vs Excel")
-st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias Excel")
+st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias En Planes_2026")
 
 # ----------------------------
 # CARGAR EXCEL FIJO
