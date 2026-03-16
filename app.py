@@ -7,6 +7,43 @@ from unidecode import unidecode
 from rapidfuzz import process, fuzz
 
 # ----------------------------
+# FONDO DEGRADADO MODERNO
+# ----------------------------
+page_bg_style = '''
+<style>
+/* Fondo principal con degradado azul claro a blanco */
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(to bottom right, #e6f7ff, #ffffff);
+    background-attachment: fixed;
+}
+
+/* Sidebar con degradado más suave */
+[data-testid="stSidebar"] {
+    background: linear-gradient(to bottom, #cce6ff, #f0f8ff);
+}
+
+/* Texto principal y títulos */
+h1, h2, h3, h4, h5, h6, p, label {
+    color: #003366;
+}
+
+/* Botones con estilo moderno */
+.stButton>button {
+    background-color: #3399ff;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    padding: 0.35em 0.75em;
+    font-weight: bold;
+}
+.stButton>button:hover {
+    background-color: #2673cc;
+}
+</style>
+'''
+st.markdown(page_bg_style, unsafe_allow_html=True)
+
+# ----------------------------
 # FUNCIONES AUXILIARES
 # ----------------------------
 def normalizar(txt):
@@ -106,7 +143,7 @@ if st.button("Comparar"):
                     limit=3
                 )
 
-                # Construir sugerencias como subtabla con Plan Acad, Catálogo y Curso
+                # Crear subtabla HTML
                 sugerencias_list = []
                 for p in posibles:
                     curso_norm = p[0]
@@ -119,7 +156,6 @@ if st.button("Comparar"):
                         if entry not in sugerencias_list:
                             sugerencias_list.append(entry)
 
-                # Crear subtabla HTML
                 sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
                 sugerencias_html += "<tr><th style='border: 1px solid black; text-align:center;'>Plan Acad</th>"
                 sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Catálogo</th>"
