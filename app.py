@@ -86,49 +86,47 @@ if st.button("Comparar"):
         merge = df_pdf.merge(base, left_on="catalogo_norm", right_on="catalogo_norm", how="left", indicator=True)
         errores = merge[merge["_merge"]=="left_only"]
 
-        # ----------------------------
-# CREAR TABLA DE ERRORES Y SUGERENCIAS
-# ----------------------------
-if errores.empty:
-    st.success("✅ Todo coincide correctamente")
-else:
-    st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
+        if errores.empty:
+            st.success("✅ Todo coincide correctamente")
+        else:
+            st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
 
-    # Crear tabla HTML
-    html = "<table style='border-collapse: collapse; width:100%;'>"
-    html += "<tr><th style='border: 1px solid black; text-align:center;'>Código en PDF</th>"
-    html += "<th style='border: 1px solid black; text-align:center;'>Curso detectado PDF</th>"
-    html += "<th style='border: 1px solid black; text-align:center;'>Posibles coincidencias En Planes_2026</th></tr>"
+            # Crear tabla HTML
+            html = "<table style='border-collapse: collapse; width:100%;'>"
+            html += "<tr><th style='border: 1px solid black; text-align:center;'>Código en PDF</th>"
+            html += "<th style='border: 1px solid black; text-align:center;'>Curso detectado PDF</th>"
+            html += "<th style='border: 1px solid black; text-align:center;'>Posibles coincidencias En Planes_2026</th></tr>"
 
-    for _, row in errores.iterrows():
-        curso_pdf = normalizar(row["curso"])
+            for _, row in errores.iterrows():
+                curso_pdf = normalizar(row["curso"])
+                posibles = process.extract(
+                    curso_pdf,
+                    base["curso_norm"],
+                    scorer=fuzz.token_sort_ratio,
+                    limit=3
+                )
 
-        # Buscar las 3 coincidencias más cercanas con RapidFuzz
-        posibles = process.extract(
-            curso_pdf,
-            base["curso_norm"],
-            scorer=fuzz.token_sort_ratio,
-            limit=3
-        )
+                # Construir sugerencias con Plan Acad y sin repeticiones
+                sugerencias_list = []
+                for p in posibles:
+                    similitud = p[1]
+                    curso_norm = p[0]
+                    matches = base[base["curso_norm"] == curso_norm]
+                    for _, r in matches.iterrows():
+                        plan_acad = r.get("Plan Acad", "Sin Plan")
+                        catalogo = r.get("Catálogo", "Sin Catálogo")
+                        nom_largo = r.get("Nom_Largo", "Sin Nombre")
+                        entry = f"{catalogo} - {nom_largo} ({plan_acad}) [Similitud: {similitud}%]"
+                        if entry not in sugerencias_list:
+                            sugerencias_list.append(entry)
 
-        # Construir sugerencias sin repetir y con Plan Acad
-        sugerencias_list = []
-        for p in posibles:
-            similitud = p[1]
-            curso_norm = p[0]
-            for _, r in base[base["curso_norm"] == curso_norm].iterrows():
-                entry = f'{r["Catálogo"]} - {r["Nom_Largo"]} ({r["Plan Acad"]}) [Similitud: {similitud}%]'
-                if entry not in sugerencias_list:
-                    sugerencias_list.append(entry)
+                sugerencias = "<br>".join(sugerencias_list)
 
-        sugerencias = "<br>".join(sugerencias_list)
+                html += f"<tr>"
+                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
+                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
+                html += f"<td style='border: 1px solid black; text-align:left; background-color:#c6efce;'>{sugerencias}</td>"
+                html += f"</tr>"
 
-        # Añadir fila a la tabla HTML
-        html += f"<tr>"
-        html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
-        html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
-        html += f"<td style='border: 1px solid black; text-align:left; background-color:#c6efce;'>{sugerencias}</td>"
-        html += f"</tr>"
-
-    html += "</table>"
-    st.markdown(html, unsafe_allow_html=True)
+            html += "</table>"
+            st.markdown(html, unsafe_allow_html=True)
