@@ -13,7 +13,7 @@ page_bg_style = '''
 <style>
 /* Fondo principal con degradado azul claro a blanco */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(to bottom right, #e6f7ff, #ffffff);
+    background: linear-gradient(to bottom right, #a81e35, #ffffff);
     background-attachment: fixed;
 }
 
