@@ -48,11 +48,11 @@ st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias E
 # CARGAR EXCEL FIJO
 # ----------------------------
 try:
-    df_base = pd.read_excel("base_cursos.xlsx")
+    df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
     df_base.columns = df_base.columns.str.strip()
     st.success("✅ Base de datos cargada correctamente")
 except FileNotFoundError:
-    st.error("No se encontró 'base_cursos.xlsx'. Asegúrate que esté en la misma carpeta que este archivo.")
+    st.error("No se encontró 'planes_cursos_2026_v03.xlsx'. Asegúrate que esté en la misma carpeta que este archivo.")
     st.stop()
 
 # ----------------------------
