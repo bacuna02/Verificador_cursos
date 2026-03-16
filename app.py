@@ -13,7 +13,7 @@ page_bg_style = '''
 <style>
 /* Fondo principal con degradado azul claro a blanco */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(to bottom right, #a81e35, #ffffff);
+    background: linear-gradient(to bottom right, #eaeaea, #ffffff);
     background-attachment: fixed;
 }
 
@@ -24,7 +24,7 @@ page_bg_style = '''
 
 /* Texto principal y títulos */
 h1, h2, h3, h4, h5, h6, p, label {
-    color: #003366;
+    color: ##a81e35;
 }
 
 /* Botones con estilo moderno */
