@@ -10,17 +10,14 @@ from rapidfuzz import process, fuzz
 # FUNCIONES AUXILIARES
 # ----------------------------
 def normalizar(txt):
-    """Normaliza texto: minúsculas, sin acentos y sin espacios extra"""
     txt = str(txt)
     txt = unidecode(txt.lower().strip())
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
 def extraer_codigos_pdf(pdf_bytes):
-    """Extrae códigos y cursos de un PDF"""
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
-
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
             palabras = pagina.extract_words()
@@ -32,10 +29,7 @@ def extraer_codigos_pdf(pdf_bytes):
                     for j in range(1,6):
                         if i+j < len(palabras):
                             curso += " " + palabras[i+j]["text"]
-                    registros.append({
-                        "catalogo": codigo,
-                        "curso": curso.strip()
-                    })
+                    registros.append({"catalogo": codigo, "curso": curso.strip()})
     return pd.DataFrame(registros)
 
 # ----------------------------
@@ -52,7 +46,7 @@ try:
     df_base.columns = df_base.columns.str.strip()
     st.success("✅ Base de datos cargada correctamente")
 except FileNotFoundError:
-    st.error("No se encontró 'planes_cursos_2026_v03.xlsx'. Asegúrate que esté en la misma carpeta que este archivo.")
+    st.error("No se encontró 'planes_cursos_2026_v03.xlsx'.")
     st.stop()
 
 # ----------------------------
@@ -75,11 +69,9 @@ pdf_file = st.file_uploader("Sube el PDF con los cursos", type=["pdf"])
 # BOTÓN COMPARAR
 # ----------------------------
 if st.button("Comparar"):
-
     if not subgrado or not carrera or pdf_file is None:
         st.error("Debes seleccionar Subgrado, Carrera y subir un PDF")
     else:
-        # Leer PDF
         pdf_bytes = pdf_file.getvalue()
         df_pdf = extraer_codigos_pdf(pdf_bytes)
         st.write("Códigos detectados en PDF:", df_pdf["catalogo"].unique())
@@ -98,7 +90,12 @@ if st.button("Comparar"):
             st.success("✅ Todo coincide correctamente")
         else:
             st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
-            sugerencias = []
+
+            # Crear tabla HTML
+            html = "<table style='border-collapse: collapse; width:100%;'>"
+            html += "<tr><th style='border: 1px solid black; text-align:center;'>Código en PDF</th>"
+            html += "<th style='border: 1px solid black; text-align:center;'>Curso detectado PDF</th>"
+            html += "<th style='border: 1px solid black; text-align:center;'>Posibles coincidencias En Planes_2026</th></tr>"
 
             for _, row in errores.iterrows():
                 curso_pdf = normalizar(row["curso"])
@@ -108,26 +105,14 @@ if st.button("Comparar"):
                     scorer=fuzz.token_sort_ratio,
                     limit=3
                 )
-                sug = []
-                for p in posibles:
-                    fila = base[base["curso_norm"]==p[0]].iloc[0]
-                    # Agregar salto de línea entre sugerencias
-                    sug.append(f'{fila["Catálogo"]} - {fila["Nom_Largo"]}')
-                sugerencias.append("\n".join(sug))  # <--- salto de línea vertical
+                # Formatear sugerencias verticalmente
+                sugerencias = "<br>".join([f'{base[base["curso_norm"]==p[0]].iloc[0]["Catálogo"]} - {base[base["curso_norm"]==p[0]].iloc[0]["Nom_Largo"]}' for p in posibles])
 
-            errores["Sugerencias"] = sugerencias
-            resultado = errores[["catalogo","curso","Sugerencias"]].copy()
-            resultado.columns = ["Código en PDF","Curso detectado PDF","Posibles coincidencias en Planes_2026"]
+                html += f"<tr>"
+                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
+                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
+                html += f"<td style='border: 1px solid black; text-align:left; background-color:#c6efce;'>{sugerencias}</td>"
+                html += f"</tr>"
 
-            # Colorear filas
-            def color_filas(row):
-                colores = []
-                for col in row.index:
-                    if col == "Posibles coincidencias Excel":
-                        colores.append("background-color:#c6efce")  # verde claro
-                    else:
-                        colores.append("background-color:#ffc7ce")  # rojo
-                return colores
-
-            # Mostrar tabla coloreada
-            st.dataframe(resultado.style.apply(color_filas, axis=1))
+            html += "</table>"
+            st.markdown(html, unsafe_allow_html=True)
