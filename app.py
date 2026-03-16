@@ -27,20 +27,23 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-/* Botones con estilo moderno en rojo y blanco */
+/* Botones con fondo rojo vino y bordes redondeados */
 .stButton>button {
     background-color: #a81e35 !important;  /* Fondo rojo vino */
-    color: #ffffff !important;             /* Texto blanco */
     border-radius: 8px;
     border: none;
     padding: 0.35em 0.75em;
     font-weight: bold;
 }
 
-/* Hover de botón: rojo más oscuro (negro suave) */
+/* Hover del botón: negro */
 .stButton>button:hover {
     background-color: #000000 !important;  /* Negro al pasar el mouse */
-    color: #ffffff !important;             /* Mantener texto blanco */
+}
+
+/* Texto del botón forzado en blanco */
+.stButton>button>div>span {
+    color: #ffffff !important;
 }
 </style>
 '''
