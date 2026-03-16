@@ -117,7 +117,7 @@ if st.button("Comparar"):
 
             errores["Sugerencias"] = sugerencias
             resultado = errores[["catalogo","curso","Sugerencias"]].copy()
-            resultado.columns = ["Código en PDF","Curso detectado PDF","Posibles coincidencias Excel"]
+            resultado.columns = ["Código en PDF","Curso detectado PDF","Posibles coincidencias en Planes_2026"]
 
             # Colorear filas
             def color_filas(row):
