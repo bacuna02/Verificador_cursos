@@ -109,14 +109,13 @@ if st.button("Comparar"):
                 # Construir sugerencias con Plan Acad y sin repeticiones
                 sugerencias_list = []
                 for p in posibles:
-                    similitud = p[1]
                     curso_norm = p[0]
                     matches = base[base["curso_norm"] == curso_norm]
                     for _, r in matches.iterrows():
                         plan_acad = r.get("Plan Acad", "Sin Plan")
                         catalogo = r.get("Catálogo", "Sin Catálogo")
                         nom_largo = r.get("Nom_Largo", "Sin Nombre")
-                        entry = f"{catalogo} - {nom_largo} ({plan_acad}) [Similitud: {similitud}%]"
+                        entry = f"{catalogo} - {nom_largo} ({plan_acad})"
                         if entry not in sugerencias_list:
                             sugerencias_list.append(entry)
 
