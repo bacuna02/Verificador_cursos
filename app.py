@@ -6,7 +6,9 @@ from unidecode import unidecode
 from rapidfuzz import process, fuzz
 import io
 
-# Funciones auxiliares
+# ----------------------------
+# FUNCIONES AUXILIARES
+# ----------------------------
 def normalizar(txt):
     txt = str(txt)
     txt = unidecode(txt.lower().strip())
@@ -30,19 +32,25 @@ def extraer_codigos_pdf(pdf_bytes):
                     registros.append({"catalogo": codigo, "curso": curso.strip()})
     return pd.DataFrame(registros)
 
-# Título de la app
+# ----------------------------
+# TÍTULO
+# ----------------------------
 st.title("📘 Comparador de Cursos PDF vs Excel")
 
-# Cargar Excel fijo
+# ----------------------------
+# CARGAR BASE EXCEL FIJA
+# ----------------------------
 try:
-    df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
+    df_base = pd.read_excel("base_cursos.xlsx")
     df_base.columns = df_base.columns.str.strip()
     st.success("✅ Base de datos cargada correctamente")
 except FileNotFoundError:
-    st.error("No se encontró planes_cursos_2026_v03.xlsx. Asegúrate que esté en la misma carpeta que este archivo.")
+    st.error("No se encontró base_cursos.xlsx. Asegúrate que esté en la misma carpeta que este archivo.")
     st.stop()
 
-# Selectores
+# ----------------------------
+# SELECTORES
+# ----------------------------
 subgrados = sorted(df_base["Subgrado"].dropna().unique())
 subgrado = st.selectbox("Seleccione Subgrado", [""] + subgrados)
 
@@ -51,20 +59,30 @@ if subgrado:
     carreras = sorted(df_base[df_base["Subgrado"]==subgrado]["Descr"].dropna().unique())
     carrera = st.selectbox("Seleccione Carrera", [""] + list(carreras))
 
-# Subir PDF
+# ----------------------------
+# SUBIR PDF
+# ----------------------------
 pdf_file = st.file_uploader("Sube el PDF con los cursos", type=["pdf"])
 
-# Botón Comparar
+# ----------------------------
+# BOTÓN COMPARAR
+# ----------------------------
 if st.button("Comparar"):
+
     if not subgrado or not carrera or pdf_file is None:
         st.error("Debes seleccionar Subgrado, Carrera y subir un PDF")
     else:
-        base = df_base[(df_base["Subgrado"]==subgrado) & (df_base["Descr"]==carrera)].copy()
-        df_pdf = extraer_codigos_pdf(pdf_file.read())
+        # Leer PDF solo una vez
+        pdf_bytes = pdf_file.getvalue()
+        df_pdf = extraer_codigos_pdf(pdf_bytes)
+
+        # Normalizar
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
+        base = df_base[(df_base["Subgrado"]==subgrado) & (df_base["Descr"]==carrera)].copy()
         base["catalogo_norm"] = base["Catálogo"].apply(normalizar)
         base["curso_norm"] = base["Nom_Largo"].apply(normalizar)
 
+        # Merge para encontrar discrepancias
         merge = df_pdf.merge(base, left_on="catalogo_norm", right_on="catalogo_norm", how="left", indicator=True)
         errores = merge[merge["_merge"]=="left_only"]
 
@@ -73,15 +91,27 @@ if st.button("Comparar"):
         else:
             st.warning("⚠️ Se detectaron discrepancias")
             sugerencias = []
+
             for _, row in errores.iterrows():
                 curso_pdf = normalizar(row["curso"])
-                posibles = process.extract(curso_pdf, base["curso_norm"], scorer=fuzz.token_sort_ratio, limit=3)
+                posibles = process.extract(
+                    curso_pdf,
+                    base["curso_norm"],
+                    scorer=fuzz.token_sort_ratio,
+                    limit=3
+                )
                 sug = []
                 for p in posibles:
-                    fila = base[base["curso_norm"]==p[0]].iloc[0]
+                    curso_excel = p[0]
+                    fila = base[base["curso_norm"]==curso_excel].iloc[0]
                     sug.append(f'{fila["Catálogo"]} - {fila["Nom_Largo"]}')
                 sugerencias.append(", ".join(sug))
+
             errores["Sugerencias"] = sugerencias
-            errores_display = errores[["catalogo","curso","Sugerencias"]]
-            errores_display.columns = ["Código en PDF", "Curso detectado PDF", "Posibles coincidencias Excel"]
-            st.dataframe(errores_display)
+
+            # Preparar tabla final
+            resultado = errores[["catalogo","curso","Sugerencias"]].copy()
+            resultado.columns = ["Código en PDF", "Curso detectado PDF", "Posibles coincidencias Excel"]
+
+            # Mostrar tabla en Streamlit
+            st.dataframe(resultado)
