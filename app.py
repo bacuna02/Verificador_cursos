@@ -5,6 +5,7 @@ import io
 import re
 from unidecode import unidecode
 from rapidfuzz import process, fuzz
+from PIL import Image
 
 # ----------------------------
 # LOGO
