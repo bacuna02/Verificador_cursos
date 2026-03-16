@@ -7,6 +7,11 @@ from unidecode import unidecode
 from rapidfuzz import process, fuzz
 
 # ----------------------------
+# LOGO
+# ----------------------------
+logo = Image.open("logo.png")
+st.image(logo, width=200)
+# ----------------------------
 # FONDO DEGRADADO MODERNO
 # ----------------------------
 page_bg_style = '''
