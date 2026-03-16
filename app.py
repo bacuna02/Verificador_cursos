@@ -27,26 +27,34 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-/* Botones con fondo rojo vino y bordes redondeados */
+/* Botones: fondo rojo vino, bordes redondeados */
 .stButton>button {
     background-color: #a81e35 !important;  /* Fondo rojo vino */
-    border-radius: 8px;
-    border: none;
-    padding: 0.35em 0.75em;
-    font-weight: bold;
+    border-radius: 8px !important;
+    border: none !important;
+    padding: 0.35em 0.75em !important;
+    font-weight: bold !important;
+    color: #ffffff !important;
 }
 
 /* Hover del botón: negro */
 .stButton>button:hover {
-    background-color: #000000 !important;  /* Negro al pasar el mouse */
+    background-color: #000000 !important;
+    color: #ffffff !important;
 }
 
-/* Texto del botón forzado en blanco */
-.stButton>button>div>span {
+/* Forzar que el texto dentro del botón sea blanco y sobreescriba tema */
+.stButton>button * {
+    all: unset;
     color: #ffffff !important;
+    font-weight: bold !important;
+    font-family: inherit !important;
+    text-align: center;
+    display: inline-block;
 }
 </style>
 '''
+
 st.markdown(page_bg_style, unsafe_allow_html=True)
 
 # ----------------------------
