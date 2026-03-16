@@ -91,7 +91,7 @@ if st.button("Comparar"):
         else:
             st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
 
-            # Crear tabla HTML
+            # Crear tabla HTML principal
             html = "<table style='border-collapse: collapse; width:100%;'>"
             html += "<tr><th style='border: 1px solid black; text-align:center;'>Código en PDF</th>"
             html += "<th style='border: 1px solid black; text-align:center;'>Curso detectado PDF</th>"
@@ -106,37 +106,40 @@ if st.button("Comparar"):
                     limit=3
                 )
 
-# Construir sugerencias con Plan Acad como tabla interna y sin repeticiones
-sugerencias_list = []
-for p in posibles:
-    curso_norm = p[0]
-    matches = base[base["curso_norm"] == curso_norm]
-    for _, r in matches.iterrows():
-        plan_acad = r.get("Plan Acad", "Sin Plan")
-        catalogo = r.get("Catálogo", "Sin Catálogo")
-        nom_largo = r.get("Nom_Largo", "Sin Nombre")
-        entry = (plan_acad, catalogo, nom_largo)
-        if entry not in sugerencias_list:
-            sugerencias_list.append(entry)
+                # Construir sugerencias como subtabla con Plan Acad, Catálogo y Curso
+                sugerencias_list = []
+                for p in posibles:
+                    curso_norm = p[0]
+                    matches = base[base["curso_norm"] == curso_norm]
+                    for _, r in matches.iterrows():
+                        plan_acad = r.get("Plan Acad", "Sin Plan")
+                        catalogo = r.get("Catálogo", "Sin Catálogo")
+                        nom_largo = r.get("Nom_Largo", "Sin Nombre")
+                        entry = (plan_acad, catalogo, nom_largo)
+                        if entry not in sugerencias_list:
+                            sugerencias_list.append(entry)
 
-# Crear subtabla HTML para sugerencias
-sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
-sugerencias_html += "<tr><th style='border: 1px solid black; text-align:center;'>Plan Acad</th>"
-sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Catálogo</th>"
-sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Curso</th></tr>"
+                # Crear subtabla HTML
+                sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
+                sugerencias_html += "<tr><th style='border: 1px solid black; text-align:center;'>Plan Acad</th>"
+                sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Catálogo</th>"
+                sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Curso</th></tr>"
 
-for plan_acad, catalogo, nom_largo in sugerencias_list:
-    sugerencias_html += "<tr>"
-    sugerencias_html += f"<td style='border: 1px solid black; text-align:center;'>{plan_acad}</td>"
-    sugerencias_html += f"<td style='border: 1px solid black; text-align:center;'>{catalogo}</td>"
-    sugerencias_html += f"<td style='border: 1px solid black; text-align:left;'>{nom_largo}</td>"
-    sugerencias_html += "</tr>"
+                for plan_acad, catalogo, nom_largo in sugerencias_list:
+                    sugerencias_html += "<tr>"
+                    sugerencias_html += f"<td style='border: 1px solid black; text-align:center;'>{plan_acad}</td>"
+                    sugerencias_html += f"<td style='border: 1px solid black; text-align:center;'>{catalogo}</td>"
+                    sugerencias_html += f"<td style='border: 1px solid black; text-align:left;'>{nom_largo}</td>"
+                    sugerencias_html += "</tr>"
 
-sugerencias_html += "</table>"
+                sugerencias_html += "</table>"
 
-# Añadir fila principal con la subtabla de sugerencias
-html += f"<tr>"
-html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
-html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
-html += f"<td style='border: 1px solid black; background-color:#c6efce;'>{sugerencias_html}</td>"
-html += "</tr>"
+                # Añadir fila principal con subtabla
+                html += "<tr>"
+                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
+                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
+                html += f"<td style='border: 1px solid black; background-color:#c6efce;'>{sugerencias_html}</td>"
+                html += "</tr>"
+
+            html += "</table>"
+            st.markdown(html, unsafe_allow_html=True)
