@@ -11,33 +11,35 @@ from rapidfuzz import process, fuzz
 # ----------------------------
 page_bg_style = '''
 <style>
-/* Fondo principal con degradado azul claro a blanco */
+/* Fondo principal con degradado gris a blanco */
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(to bottom right, #eaeaea, #ffffff);
     background-attachment: fixed;
 }
 
-/* Sidebar con degradado más suave */
+/* Sidebar con fondo gris uniforme */
 [data-testid="stSidebar"] {
-    background: linear-gradient(to bottom, #cce6ff, #f0f8ff);
+    background-color: #eaeaea;
 }
 
-/* Texto principal y títulos */
+/* Texto principal y títulos en rojo */
 h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-/* Botones con estilo moderno*/
+/* Botones con estilo moderno en rojo y blanco */
 .stButton>button {
-    background-color: #a81e35 !important;  /* Fondo azul */
+    background-color: #a81e35 !important;  /* Fondo rojo vino */
     color: #ffffff !important;             /* Texto blanco */
     border-radius: 8px;
     border: none;
     padding: 0.35em 0.75em;
     font-weight: bold;
 }
+
+/* Hover de botón: rojo más oscuro (negro suave) */
 .stButton>button:hover {
-    background-color: #2673cc !important;  /* Azul más oscuro al pasar el mouse */
+    background-color: #000000 !important;  /* Negro al pasar el mouse */
     color: #ffffff !important;             /* Mantener texto blanco */
 }
 </style>
