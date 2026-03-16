@@ -27,17 +27,18 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-/* Botones con estilo moderno */
+/* Botones con estilo moderno*/
 .stButton>button {
-    background-color: #3399ff;
-    color: white;
+    background-color: #a81e35 !important;  /* Fondo azul */
+    color: #ffffff !important;             /* Texto blanco */
     border-radius: 8px;
     border: none;
     padding: 0.35em 0.75em;
     font-weight: bold;
 }
 .stButton>button:hover {
-    background-color: #2673cc;
+    background-color: #2673cc !important;  /* Azul más oscuro al pasar el mouse */
+    color: #ffffff !important;             /* Mantener texto blanco */
 }
 </style>
 '''
