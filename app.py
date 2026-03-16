@@ -1,23 +1,26 @@
 import streamlit as st
 import pandas as pd
 import pdfplumber
+import io
 import re
 from unidecode import unidecode
 from rapidfuzz import process, fuzz
-import io
 
 # ----------------------------
 # FUNCIONES AUXILIARES
 # ----------------------------
 def normalizar(txt):
+    """Normaliza texto: minúsculas, sin acentos y sin espacios extra"""
     txt = str(txt)
     txt = unidecode(txt.lower().strip())
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
 def extraer_codigos_pdf(pdf_bytes):
+    """Extrae códigos y cursos de un PDF"""
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
+
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
             palabras = pagina.extract_words()
@@ -29,23 +32,27 @@ def extraer_codigos_pdf(pdf_bytes):
                     for j in range(1,6):
                         if i+j < len(palabras):
                             curso += " " + palabras[i+j]["text"]
-                    registros.append({"catalogo": codigo, "curso": curso.strip()})
+                    registros.append({
+                        "catalogo": codigo,
+                        "curso": curso.strip()
+                    })
     return pd.DataFrame(registros)
 
 # ----------------------------
 # TÍTULO
 # ----------------------------
 st.title("📘 Comparador de Cursos PDF vs Excel")
+st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias Excel")
 
 # ----------------------------
-# CARGAR BASE EXCEL FIJA
+# CARGAR EXCEL FIJO
 # ----------------------------
 try:
     df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
     df_base.columns = df_base.columns.str.strip()
     st.success("✅ Base de datos cargada correctamente")
 except FileNotFoundError:
-    st.error("No se encontró planes_cursos_2026_v03.xlsx. Asegúrate que esté en la misma carpeta que este archivo.")
+    st.error("No se encontró 'planes_cursos_2026_v03'. Asegúrate que esté en la misma carpeta que este archivo.")
     st.stop()
 
 # ----------------------------
@@ -72,9 +79,10 @@ if st.button("Comparar"):
     if not subgrado or not carrera or pdf_file is None:
         st.error("Debes seleccionar Subgrado, Carrera y subir un PDF")
     else:
-        # Leer PDF solo una vez
+        # Leer PDF
         pdf_bytes = pdf_file.getvalue()
         df_pdf = extraer_codigos_pdf(pdf_bytes)
+        st.write("Códigos detectados en PDF:", df_pdf["catalogo"].unique())
 
         # Normalizar
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
@@ -82,16 +90,15 @@ if st.button("Comparar"):
         base["catalogo_norm"] = base["Catálogo"].apply(normalizar)
         base["curso_norm"] = base["Nom_Largo"].apply(normalizar)
 
-        # Merge para encontrar discrepancias
+        # Merge para detectar errores
         merge = df_pdf.merge(base, left_on="catalogo_norm", right_on="catalogo_norm", how="left", indicator=True)
         errores = merge[merge["_merge"]=="left_only"]
 
         if errores.empty:
             st.success("✅ Todo coincide correctamente")
         else:
-            st.warning("⚠️ Se detectaron discrepancias")
+            st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
             sugerencias = []
-
             for _, row in errores.iterrows():
                 curso_pdf = normalizar(row["curso"])
                 posibles = process.extract(
@@ -102,16 +109,22 @@ if st.button("Comparar"):
                 )
                 sug = []
                 for p in posibles:
-                    curso_excel = p[0]
-                    fila = base[base["curso_norm"]==curso_excel].iloc[0]
+                    fila = base[base["curso_norm"]==p[0]].iloc[0]
                     sug.append(f'{fila["Catálogo"]} - {fila["Nom_Largo"]}')
                 sugerencias.append(", ".join(sug))
 
             errores["Sugerencias"] = sugerencias
-
-            # Preparar tabla final
             resultado = errores[["catalogo","curso","Sugerencias"]].copy()
-            resultado.columns = ["Código en PDF", "Curso detectado PDF", "Posibles coincidencias Excel"]
+            resultado.columns = ["Código en PDF","Curso detectado PDF","Posibles coincidencias Excel"]
 
-            # Mostrar tabla en Streamlit
-            st.dataframe(resultado)
+            # Colorear filas
+            def color_filas(row):
+                colores = []
+                for col in row.index:
+                    if col == "Posibles coincidencias Excel":
+                        colores.append("background-color:#c6efce")  # verde claro
+                    else:
+                        colores.append("background-color:#ffc7ce")  # rojo
+                return colores
+
+            st.dataframe(resultado.style.apply(color_filas, axis=1))
