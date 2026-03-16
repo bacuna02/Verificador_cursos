@@ -48,11 +48,11 @@ st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias E
 # CARGAR EXCEL FIJO
 # ----------------------------
 try:
-    df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
+    df_base = pd.read_excel("base_cursos.xlsx")
     df_base.columns = df_base.columns.str.strip()
     st.success("✅ Base de datos cargada correctamente")
 except FileNotFoundError:
-    st.error("No se encontró 'planes_cursos_2026_v03'. Asegúrate que esté en la misma carpeta que este archivo.")
+    st.error("No se encontró 'base_cursos.xlsx'. Asegúrate que esté en la misma carpeta que este archivo.")
     st.stop()
 
 # ----------------------------
@@ -99,6 +99,7 @@ if st.button("Comparar"):
         else:
             st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
             sugerencias = []
+
             for _, row in errores.iterrows():
                 curso_pdf = normalizar(row["curso"])
                 posibles = process.extract(
@@ -110,8 +111,9 @@ if st.button("Comparar"):
                 sug = []
                 for p in posibles:
                     fila = base[base["curso_norm"]==p[0]].iloc[0]
+                    # Agregar salto de línea entre sugerencias
                     sug.append(f'{fila["Catálogo"]} - {fila["Nom_Largo"]}')
-                sugerencias.append(", ".join(sug))
+                sugerencias.append("\n".join(sug))  # <--- salto de línea vertical
 
             errores["Sugerencias"] = sugerencias
             resultado = errores[["catalogo","curso","Sugerencias"]].copy()
@@ -127,4 +129,5 @@ if st.button("Comparar"):
                         colores.append("background-color:#ffc7ce")  # rojo
                 return colores
 
+            # Mostrar tabla coloreada
             st.dataframe(resultado.style.apply(color_filas, axis=1))
