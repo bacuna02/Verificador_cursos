@@ -92,7 +92,7 @@ def extraer_codigos_pdf(pdf_bytes):
 # ----------------------------
 # TÍTULO
 # ----------------------------
-st.title("📘 Validación de Informe Académico")
+st.title("📘 Validación: Informe Académico")
 st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias En Planes 2026")
 
 # ----------------------------
