@@ -24,7 +24,7 @@ page_bg_style = '''
 
 /* Texto principal y títulos */
 h1, h2, h3, h4, h5, h6, p, label {
-    color: ##a81e35;
+    color: #a81e35;
 }
 
 /* Botones con estilo moderno */
