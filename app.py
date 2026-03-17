@@ -10,7 +10,7 @@ from PIL import Image
 # LOGO
 # ----------------------------
 logo = Image.open("logo.png")
-st.image(logo, width=200)
+st.image(logo, width=400)
 
 # ----------------------------
 # FONDO DEGRADADO MODERNO
