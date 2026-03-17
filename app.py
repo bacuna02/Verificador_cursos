@@ -120,12 +120,15 @@ if subgrado:
 # ----------------------------
 # SUBIR PDF
 # ----------------------------
-pdf_file = st.file_uploader("Sube el PDF con los cursos", type=["pdf"])
+pdf_file = st.file_uploader(
+    "📂 Selecciona o arrastra tu PDF aquí",
+    type=["pdf"]
+)
 
 # ----------------------------
 # BOTÓN COMPARAR
 # ----------------------------
-if st.button("Comparar"):
+if st.button("Validar Catálogos del informe"):
     if not subgrado or not carrera or pdf_file is None:
         st.error("Debes seleccionar Subgrado, Carrera y subir un PDF")
     else:
