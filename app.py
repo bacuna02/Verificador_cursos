@@ -9,10 +9,8 @@ from PIL import Image
 # ----------------------------
 # LOGO
 # ----------------------------
-col1, col2 = st.columns([1, 3])
-
-with col1:
-    st.image("logo.png", width=400)
+logo = Image.open("logo.png")
+st.image(logo, width=400)
 
 # ----------------------------
 # FONDO DEGRADADO MODERNO
