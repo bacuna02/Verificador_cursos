@@ -4,7 +4,6 @@ import pdfplumber
 import io
 import re
 from unidecode import unidecode
-from rapidfuzz import process, fuzz
 from PIL import Image
 
 # ----------------------------
@@ -67,15 +66,12 @@ def normalizar(txt):
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
-# 🔥 FILTRO PALABRAS
 def es_palabra_valida(txt):
     txt = txt.strip()
     
-    # palabras normales (incluye monosílabos)
     if re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$', txt):
         return True
     
-    # números romanos
     if re.match(r'^(I|II|III|IV|V|VI|VII|VIII|IX|X)$', txt.upper()):
         return True
 
@@ -96,16 +92,13 @@ def extraer_codigos_pdf(pdf_bytes):
                     codigo = texto
                     palabras_curso = []
 
-                    # 🔥 LÓGICA MEJORADA (evita cruzar columnas)
                     for j in range(1, 15):
                         if i + j < len(palabras):
                             siguiente = palabras[i + j]["text"].strip()
 
-                            # 🚨 cortar si aparece número (nueva columna)
                             if re.match(r'^\d+$', siguiente):
                                 break
 
-                            # 🚨 cortar si aparece otro código
                             if re.match(patron_codigo, siguiente):
                                 break
 
@@ -125,10 +118,10 @@ def extraer_codigos_pdf(pdf_bytes):
 # TÍTULO
 # ----------------------------
 st.title("📘 Validación: Informe Académico")
-st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Posibles coincidencias En Planes 2026")
+st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Coincidencias EXACTAS en Planes 2026")
 
 # ----------------------------
-# CARGAR EXCEL FIJO
+# CARGAR EXCEL
 # ----------------------------
 try:
     df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
@@ -158,7 +151,7 @@ pdf_file = st.file_uploader(
 )
 
 # ----------------------------
-# BOTÓN COMPARAR
+# BOTÓN
 # ----------------------------
 if st.button("Validar Catálogos del informe"):
     if not subgrado or not carrera or pdf_file is None:
@@ -168,14 +161,23 @@ if st.button("Validar Catálogos del informe"):
         df_pdf = extraer_codigos_pdf(pdf_bytes)
         st.write("Códigos detectados en PDF:", df_pdf["catalogo"].unique())
 
-        # Normalizar
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
-        base = df_base[(df_base["Subgrado"]==subgrado) & (df_base["Descr"]==carrera)].copy()
+
+        base = df_base[
+            (df_base["Subgrado"]==subgrado) & 
+            (df_base["Descr"]==carrera)
+        ].copy()
+
         base["catalogo_norm"] = base["Catálogo"].apply(normalizar)
         base["curso_norm"] = base["Nom_Largo"].apply(normalizar)
 
-        # Merge para detectar errores
-        merge = df_pdf.merge(base, left_on="catalogo_norm", right_on="catalogo_norm", how="left", indicator=True)
+        merge = df_pdf.merge(
+            base,
+            on="catalogo_norm",
+            how="left",
+            indicator=True
+        )
+
         errores = merge[merge["_merge"]=="left_only"]
 
         if errores.empty:
@@ -184,49 +186,32 @@ if st.button("Validar Catálogos del informe"):
             st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
 
             html = "<table style='border-collapse: collapse; width:100%;'>"
-            html += "<tr><th style='border: 1px solid black; text-align:center;'>Código en PDF</th>"
-            html += "<th style='border: 1px solid black; text-align:center;'>Curso detectado PDF</th>"
-            html += "<th style='border: 1px solid black; text-align:center;'>Posibles coincidencias En Planes_2026</th></tr>"
+            html += "<tr><th style='border: 1px solid black;'>Código PDF</th>"
+            html += "<th style='border: 1px solid black;'>Curso PDF</th>"
+            html += "<th style='border: 1px solid black;'>Coincidencias EXACTAS</th></tr>"
 
             for _, row in errores.iterrows():
                 curso_pdf = normalizar(row["curso"])
-                posibles = process.extract(
-                    curso_pdf,
-                    base["curso_norm"],
-                    scorer=fuzz.token_sort_ratio,
-                    limit=3
-                )
 
-                sugerencias_list = []
-                for p in posibles:
-                    curso_norm = p[0]
-                    matches = base[base["curso_norm"] == curso_norm]
-                    for _, r in matches.iterrows():
-                        plan_acad = r.get("Plan Acad", "Sin Plan")
-                        catalogo = r.get("Catálogo", "Sin Catálogo")
-                        nom_largo = r.get("Nom_Largo", "Sin Nombre")
-                        entry = (plan_acad, catalogo, nom_largo)
-                        if entry not in sugerencias_list:
-                            sugerencias_list.append(entry)
+                # 🔥 SOLO COINCIDENCIA EXACTA
+                matches_exactos = base[base["curso_norm"] == curso_pdf]
 
                 sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
-                sugerencias_html += "<tr><th style='border: 1px solid black; text-align:center;'>Plan Acad</th>"
-                sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Catálogo</th>"
-                sugerencias_html += "<th style='border: 1px solid black; text-align:center;'>Curso</th></tr>"
+                sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
 
-                for plan_acad, catalogo, nom_largo in sugerencias_list:
+                for _, r in matches_exactos.iterrows():
                     sugerencias_html += "<tr>"
-                    sugerencias_html += f"<td style='border: 1px solid black; text-align:center;'>{plan_acad}</td>"
-                    sugerencias_html += f"<td style='border: 1px solid black; text-align:center;'>{catalogo}</td>"
-                    sugerencias_html += f"<td style='border: 1px solid black; text-align:left;'>{nom_largo}</td>"
+                    sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
+                    sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
+                    sugerencias_html += f"<td>{r.get('Nom_Largo','')}</td>"
                     sugerencias_html += "</tr>"
 
                 sugerencias_html += "</table>"
 
                 html += "<tr>"
-                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
-                html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
-                html += f"<td style='border: 1px solid black; background-color:#c6efce;'>{sugerencias_html}</td>"
+                html += f"<td style='background:#ffc7ce;'>{row['catalogo']}</td>"
+                html += f"<td style='background:#ffc7ce;'>{row['curso']}</td>"
+                html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
                 html += "</tr>"
 
             html += "</table>"
