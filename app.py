@@ -67,15 +67,15 @@ def normalizar(txt):
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
-# 🔥 FILTRO MEJORADO
+# 🔥 FILTRO PALABRAS
 def es_palabra_valida(txt):
     txt = txt.strip()
     
-    # Permitir palabras con letras (incluye monosílabos)
+    # palabras normales (incluye monosílabos)
     if re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$', txt):
         return True
     
-    # Permitir números romanos
+    # números romanos
     if re.match(r'^(I|II|III|IV|V|VI|VII|VIII|IX|X)$', txt.upper()):
         return True
 
@@ -96,15 +96,21 @@ def extraer_codigos_pdf(pdf_bytes):
                     codigo = texto
                     palabras_curso = []
 
-                    for j in range(1, 10):
+                    # 🔥 LÓGICA MEJORADA (evita cruzar columnas)
+                    for j in range(1, 15):
                         if i + j < len(palabras):
-                            siguiente = palabras[i + j]["text"]
+                            siguiente = palabras[i + j]["text"].strip()
+
+                            # 🚨 cortar si aparece número (nueva columna)
+                            if re.match(r'^\d+$', siguiente):
+                                break
+
+                            # 🚨 cortar si aparece otro código
+                            if re.match(patron_codigo, siguiente):
+                                break
 
                             if es_palabra_valida(siguiente):
                                 palabras_curso.append(siguiente)
-
-                            if len(palabras_curso) == 5:
-                                break
 
                     curso = " ".join(palabras_curso)
 
