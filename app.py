@@ -83,7 +83,7 @@ def es_palabra_valida(txt):
 
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
-    patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
+    patron_codigo = r'\b\d{6}(?=[A-Z0-9]{2,4}\b)(?=.*[A-Z])[A-Z0-9]{2,4}\b'
 
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
