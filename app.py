@@ -67,27 +67,38 @@ def normalizar(txt):
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
-# 🔥 NUEVO: filtro para solo palabras reales
+# 🔥 FILTRO MEJORADO
 def es_palabra_valida(txt):
     txt = txt.strip()
-    return bool(re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,}$', txt))
+    
+    # Permitir palabras con letras (incluye monosílabos)
+    if re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$', txt):
+        return True
+    
+    # Permitir números romanos
+    if re.match(r'^(I|II|III|IV|V|VI|VII|VIII|IX|X)$', txt.upper()):
+        return True
+
+    return False
 
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
+
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
             palabras = pagina.extract_words()
+
             for i, w in enumerate(palabras):
                 texto = w["text"]
+
                 if re.match(patron_codigo, texto):
                     codigo = texto
                     palabras_curso = []
 
-                    # 🔥 CAMBIO: ahora filtra palabras válidas
                     for j in range(1, 10):
-                        if i+j < len(palabras):
-                            siguiente = palabras[i+j]["text"]
+                        if i + j < len(palabras):
+                            siguiente = palabras[i + j]["text"]
 
                             if es_palabra_valida(siguiente):
                                 palabras_curso.append(siguiente)
