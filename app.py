@@ -12,30 +12,27 @@ from PIL import Image
 # ----------------------------
 logo = Image.open("logo.png")
 st.image(logo, width=200)
+
 # ----------------------------
 # FONDO DEGRADADO MODERNO
 # ----------------------------
 page_bg_style = '''
 <style>
-/* Fondo principal con degradado gris a blanco */
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(to bottom right, #eaeaea, #ffffff);
     background-attachment: fixed;
 }
 
-/* Sidebar con fondo gris uniforme */
 [data-testid="stSidebar"] {
     background-color: #eaeaea;
 }
 
-/* Texto principal y títulos en rojo */
 h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-/* Botones: fondo rojo vino, bordes redondeados */
 .stButton>button {
-    background-color: #a81e35 !important;  /* Fondo rojo vino */
+    background-color: #a81e35 !important;
     border-radius: 8px !important;
     border: none !important;
     padding: 0.35em 0.75em !important;
@@ -43,13 +40,11 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: #ffffff !important;
 }
 
-/* Hover del botón: negro */
 .stButton>button:hover {
     background-color: #000000 !important;
     color: #ffffff !important;
 }
 
-/* Forzar que el texto dentro del botón sea blanco y sobreescriba tema */
 .stButton>button * {
     all: unset;
     color: #ffffff !important;
@@ -72,6 +67,11 @@ def normalizar(txt):
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
+# 🔥 NUEVO: filtro para solo palabras reales
+def es_palabra_valida(txt):
+    txt = txt.strip()
+    return bool(re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,}$', txt))
+
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
@@ -82,11 +82,26 @@ def extraer_codigos_pdf(pdf_bytes):
                 texto = w["text"]
                 if re.match(patron_codigo, texto):
                     codigo = texto
-                    curso = ""
-                    for j in range(1,6):
+                    palabras_curso = []
+
+                    # 🔥 CAMBIO: ahora filtra palabras válidas
+                    for j in range(1, 10):
                         if i+j < len(palabras):
-                            curso += " " + palabras[i+j]["text"]
-                    registros.append({"catalogo": codigo, "curso": curso.strip()})
+                            siguiente = palabras[i+j]["text"]
+
+                            if es_palabra_valida(siguiente):
+                                palabras_curso.append(siguiente)
+
+                            if len(palabras_curso) == 5:
+                                break
+
+                    curso = " ".join(palabras_curso)
+
+                    registros.append({
+                        "catalogo": codigo,
+                        "curso": curso
+                    })
+
     return pd.DataFrame(registros)
 
 # ----------------------------
@@ -151,7 +166,6 @@ if st.button("Validar Catálogos del informe"):
         else:
             st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
 
-            # Crear tabla HTML principal
             html = "<table style='border-collapse: collapse; width:100%;'>"
             html += "<tr><th style='border: 1px solid black; text-align:center;'>Código en PDF</th>"
             html += "<th style='border: 1px solid black; text-align:center;'>Curso detectado PDF</th>"
@@ -166,7 +180,6 @@ if st.button("Validar Catálogos del informe"):
                     limit=3
                 )
 
-                # Crear subtabla HTML
                 sugerencias_list = []
                 for p in posibles:
                     curso_norm = p[0]
@@ -193,7 +206,6 @@ if st.button("Validar Catálogos del informe"):
 
                 sugerencias_html += "</table>"
 
-                # Añadir fila principal con subtabla
                 html += "<tr>"
                 html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['catalogo']}</td>"
                 html += f"<td style='border: 1px solid black; text-align:center; background-color:#ffc7ce;'>{row['curso']}</td>"
