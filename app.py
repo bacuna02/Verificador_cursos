@@ -43,6 +43,15 @@ h1, h2, h3, h4, h5, h6, p, label {
     background-color: #000000 !important;
     color: #ffffff !important;
 }
+
+.stButton>button * {
+    all: unset;
+    color: #ffffff !important;
+    font-weight: bold !important;
+    font-family: inherit !important;
+    text-align: center;
+    display: inline-block;
+}
 </style>
 '''
 
@@ -60,41 +69,33 @@ def normalizar(txt):
 
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
-    patron_codigo = r'\b\d{6}(?=[A-Z0-9]{2,4}\b)(?=.*[A-Z])[A-Z0-9]{2,4}\b'
+    patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
 
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
-            palabras = pagina.extract_words()
 
-            for i, w in enumerate(palabras):
-                texto = w["text"]
+            texto = pagina.extract_text()
 
-                if re.match(patron_codigo, texto):
-                    codigo = texto
-                    palabras_curso = []
+            if not texto:
+                continue
 
-                    for j in range(1, 20):  # aumentamos rango por seguridad
-                        if i + j < len(palabras):
+            # dividir por líneas reales
+            lineas = texto.split("\n")
 
-                            siguiente = palabras[i + j]["text"]
+            for linea in lineas:
+                linea = linea.strip()
 
-                            # 🔥 limpiar saltos de línea
-                            siguiente = siguiente.replace("\n", " ").replace("\r", " ").strip()
+                if not linea:
+                    continue
 
-                            # cortar si aparece otro bloque
-                            if re.match(r'^\d+$', siguiente):
-                                break
+                match = re.search(patron_codigo, linea)
 
-                            if re.match(patron_codigo, siguiente):
-                                break
+                if match:
+                    codigo = match.group()
 
-                            # 🔥 aceptar casi todo texto útil
-                            if len(siguiente) > 1:
-                                palabras_curso.append(siguiente)
-
-                    # 🔥 reconstrucción robusta
-                    curso = " ".join(palabras_curso)
-                    curso = re.sub(r'\s+', ' ', curso).strip()
+                    # todo lo demás es el curso
+                    curso = linea.replace(codigo, "").strip()
+                    curso = re.sub(r'\s+', ' ', curso)
 
                     registros.append({
                         "catalogo": codigo,
