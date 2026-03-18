@@ -33,24 +33,24 @@ h1, h2, h3, h4, h5, h6, p, label {
 /* BOTÓN */
 .stButton > button {
     background-color: #a81e35 !important;
-    color: white !important;
     border-radius: 8px !important;
     border: none !important;
     padding: 8px 16px !important;
     font-weight: bold !important;
-    font-size: 14px !important;
+}
+
+/* 🔥 TEXTO SIEMPRE VISIBLE */
+.stButton > button span {
+    color: white !important;
 }
 
 /* HOVER */
 .stButton > button:hover {
     background-color: #000000 !important;
-    color: white !important;
 }
 
-/* 🔥 TEXTO DEL BOTÓN (FIX REAL) */
-.stButton > button div {
+.stButton > button:hover span {
     color: white !important;
-    font-weight: bold !important;
 }
 </style>
 '''
