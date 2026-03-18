@@ -159,7 +159,9 @@ if st.button("Validar Catálogos del informe"):
     else:
         pdf_bytes = pdf_file.getvalue()
         df_pdf = extraer_codigos_pdf(pdf_bytes)
-        st.write("Códigos detectados en PDF:", df_pdf["catalogo"].unique())
+        total_codigos = df_pdf["catalogo"].nunique()
+        st.info(f"📊 Total de catálogos hallados en el informe: {total_codigos}")
+        st.write("Cátalogos hallados en PDF:", df_pdf["catalogo"].unique())
 
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
 
