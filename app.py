@@ -143,6 +143,9 @@ if st.button("Validar Catálogos del informe"):
 
     df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
 
+    # 🔥 TOTAL DE CATÁLOGOS DETECTADOS
+    total_catalogos = df_pdf["catalogo"].nunique()
+
     # 🔥 BASE FILTRADA
     base = df_base[
         (df_base["Subgrado"]==subgrado) &
@@ -158,11 +161,10 @@ if st.button("Validar Catálogos del informe"):
     # RESULTADOS
     # ----------------------------
     if errores.empty:
-        st.success("✅ Todo coincide correctamente")
+        st.success(f"✅ Se identificaron {total_catalogos} catálogos y todos corresponden correctamente")
     else:
-        st.warning(f"⚠️ {len(errores)} catálogos no corresponden.")
+        st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
 
-        # 🔥 LEYENDA AQUÍ (solo cuando hay errores)
         st.markdown("**Leyenda:** 🔴 Catálogo no coincide | 🟢 Coincidencias en Planes 2026")
 
         html = "<table style='border-collapse: collapse; width:100%;'>"
