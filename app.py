@@ -13,7 +13,7 @@ logo = Image.open("logo.png")
 st.image(logo, width=400)
 
 # ----------------------------
-# FONDO DEGRADADO MODERNO
+# FONDO
 # ----------------------------
 page_bg_style = '''
 <style>
@@ -38,27 +38,12 @@ h1, h2, h3, h4, h5, h6, p, label {
     font-weight: bold !important;
     color: #ffffff !important;
 }
-
-.stButton>button:hover {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-.stButton>button * {
-    all: unset;
-    color: #ffffff !important;
-    font-weight: bold !important;
-    font-family: inherit !important;
-    text-align: center;
-    display: inline-block;
-}
 </style>
 '''
-
 st.markdown(page_bg_style, unsafe_allow_html=True)
 
 # ----------------------------
-# FUNCIONES AUXILIARES
+# NORMALIZAR
 # ----------------------------
 def normalizar(txt):
     txt = str(txt)
@@ -67,7 +52,9 @@ def normalizar(txt):
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
-
+# ----------------------------
+# EXTRAER SOLO CÓDIGOS (SIN CURSO)
+# ----------------------------
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
@@ -80,19 +67,16 @@ def extraer_codigos_pdf(pdf_bytes):
 
             codigos = re.findall(patron_codigo, texto)
 
-            for codigo in codigos:
-                registros.append({
-                    "catalogo": codigo,
-                    "curso": ""
-                })
+            for c in codigos:
+                registros.append({"catalogo": c})
 
     if not registros:
-        return pd.DataFrame(columns=["catalogo", "curso"])
+        return pd.DataFrame(columns=["catalogo"])
 
     return pd.DataFrame(registros)
 
 # ----------------------------
-# TÍTULO
+# UI
 # ----------------------------
 st.title("📘 Validación: Informe Académico")
 st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Coincidencias EXACTAS en Planes 2026")
@@ -105,12 +89,12 @@ try:
     df_base.columns = df_base.columns.str.strip()
     df_base["catalogo_norm"] = df_base["Catálogo"].apply(normalizar)
     st.success("✅ Base de datos cargada correctamente")
-except FileNotFoundError:
-    st.error("No se encontró 'planes_cursos_2026_v03.xlsx'.")
+except:
+    st.error("No se encontró el Excel.")
     st.stop()
 
 # ----------------------------
-# SELECTORES
+# FILTROS
 # ----------------------------
 subgrados = sorted(df_base["Subgrado"].dropna().unique())
 subgrado = st.selectbox("Seleccione Subgrado", [""] + subgrados)
@@ -121,83 +105,91 @@ if subgrado:
     carrera = st.selectbox("Seleccione Carrera", [""] + list(carreras))
 
 # ----------------------------
-# SUBIR PDF
+# PDF
 # ----------------------------
-pdf_file = st.file_uploader(
-    "📂 Selecciona o arrastra tu PDF aquí",
-    type=["pdf"]
-)
+pdf_file = st.file_uploader("Sube PDF", type=["pdf"])
 
 # ----------------------------
 # BOTÓN
 # ----------------------------
 if st.button("Validar Catálogos del informe"):
+
     if not subgrado or not carrera or pdf_file is None:
-        st.error("Debes seleccionar Subgrado, Carrera y subir un PDF")
+        st.error("Completa todos los campos")
+        st.stop()
+
+    pdf_bytes = pdf_file.getvalue()
+    df_pdf = extraer_codigos_pdf(pdf_bytes)
+
+    if df_pdf.empty:
+        st.error("No se detectaron códigos")
+        st.stop()
+
+    df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
+
+    # 🔥 BASE FILTRADA (VALIDACIÓN)
+    base = df_base[
+        (df_base["Subgrado"]==subgrado) &
+        (df_base["Descr"]==carrera)
+    ].copy()
+
+    base["catalogo_norm"] = base["catalogo_norm"]
+
+    # 🔥 ERRORES = NO EXISTE EN LA CARRERA
+    errores = df_pdf[
+        ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
+    ]
+
+    # ----------------------------
+    # RESULTADOS
+    # ----------------------------
+    if errores.empty:
+        st.success("✅ Todo coincide correctamente")
     else:
-        pdf_bytes = pdf_file.getvalue()
-        df_pdf = extraer_codigos_pdf(pdf_bytes)
+        st.warning(f"⚠️ {len(errores)} cursos no pertenecen a la carrera")
 
-        if df_pdf.empty:
-            st.error("❌ No se pudieron detectar códigos en el PDF.")
-            st.stop()
+        html = "<table style='border-collapse: collapse; width:100%;'>"
+        html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
+        html += "<th style='border:1px solid black;'>Curso (Correcto)</th>"
+        html += "<th style='border:1px solid black;'>Coincidencias EXACTAS</th></tr>"
 
-        total_codigos = df_pdf["catalogo"].nunique()
-        st.info(f"📊 Total de catálogos hallados: {total_codigos}")
-        st.write("Detalle:", df_pdf["catalogo"].unique())
+        for _, row in errores.iterrows():
 
-        df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
+            codigo = row["catalogo"]
 
-        # 🔥 BASE FILTRADA (para validación)
-        base = df_base[
-            (df_base["Subgrado"]==subgrado) & 
-            (df_base["Descr"]==carrera)
-        ].copy()
+            # 🔥 CURSO DESDE TODO EL EXCEL (CLAVE)
+            curso_df = df_base[
+                df_base["catalogo_norm"] == row["catalogo_norm"]
+            ]["Nom_Largo"]
 
-# 🔥 VALIDACIÓN REAL CONTRA LA CARRERA
-        errores = df_pdf[
-            ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
-        ]
+            if not curso_df.empty:
+                curso_real = curso_df.iloc[0]
+            else:
+                curso_real = "No encontrado"
 
-        if errores.empty:
-            st.success("✅ Todo coincide correctamente")
-        else:
-            st.warning(f"⚠️ Se detectaron {len(errores)} discrepancias")
+            # 🔥 COINCIDENCIAS SOLO EN BASE FILTRADA
+            matches = base[
+                base["Nom_Largo"] == curso_real
+            ]
 
-            html = "<table style='border-collapse: collapse; width:100%;'>"
-            html += "<tr><th style='border: 1px solid black;'>Código PDF</th>"
-            html += "<th style='border: 1px solid black;'>Curso (Correcto)</th>"
-            html += "<th style='border: 1px solid black;'>Coincidencias EXACTAS</th></tr>"
+            sugerencias_html = "<table style='width:100%;'>"
+            sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
 
-            for _, row in errores.iterrows():
+            for _, r in matches.iterrows():
+                sugerencias_html += "<tr>"
+                sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
+                sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
+                sugerencias_html += f"<td>{r.get('Nom_Largo','')}</td>"
+                sugerencias_html += "</tr>"
 
-                codigo = row["catalogo"]
+            sugerencias_html += "</table>"
 
-                # 🔥 curso correcto desde TODO el Excel
-                curso_real = row.get("Nom_Largo", "No encontrado")
+            html += "<tr>"
+            html += f"<td style='background:#ffc7ce;'>{codigo}</td>"
+            html += f"<td style='background:#ffc7ce;'>{curso_real}</td>"
+            html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
+            html += "</tr>"
 
-                # 🔥 coincidencias SOLO en el filtro
-                matches_exactos = base[
-                    base["Nom_Largo"] == curso_real
-                ]
+        html += "</table>"
 
-                sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
-                sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
-
-                for _, r in matches_exactos.iterrows():
-                    sugerencias_html += "<tr>"
-                    sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
-                    sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
-                    sugerencias_html += f"<td>{r.get('Nom_Largo','')}</td>"
-                    sugerencias_html += "</tr>"
-
-                sugerencias_html += "</table>"
-
-                html += "<tr>"
-                html += f"<td style='background:#ffc7ce;'>{codigo}</td>"
-                html += f"<td style='background:#ffc7ce;'>{curso_real}</td>"
-                html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
-                html += "</tr>"
-
-            html += "</table>"
-            st.markdown(html, unsafe_allow_html=True)
+        st.markdown(html, unsafe_allow_html=True)
