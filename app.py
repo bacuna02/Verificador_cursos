@@ -43,15 +43,6 @@ h1, h2, h3, h4, h5, h6, p, label {
     background-color: #000000 !important;
     color: #ffffff !important;
 }
-
-.stButton>button * {
-    all: unset;
-    color: #ffffff !important;
-    font-weight: bold !important;
-    font-family: inherit !important;
-    text-align: center;
-    display: inline-block;
-}
 </style>
 '''
 
@@ -62,20 +53,10 @@ st.markdown(page_bg_style, unsafe_allow_html=True)
 # ----------------------------
 def normalizar(txt):
     txt = str(txt)
+    txt = txt.replace("\n", " ").replace("\r", " ")
     txt = unidecode(txt.lower().strip())
     txt = re.sub(r'\s+', ' ', txt)
     return txt
-
-def es_palabra_valida(txt):
-    txt = txt.strip()
-    
-    if re.match(r'^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$', txt):
-        return True
-    
-    if re.match(r'^(I|II|III|IV|V|VI|VII|VIII|IX|X)$', txt.upper()):
-        return True
-
-    return False
 
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
@@ -92,20 +73,28 @@ def extraer_codigos_pdf(pdf_bytes):
                     codigo = texto
                     palabras_curso = []
 
-                    for j in range(1, 15):
+                    for j in range(1, 20):  # aumentamos rango por seguridad
                         if i + j < len(palabras):
-                            siguiente = palabras[i + j]["text"].strip()
 
+                            siguiente = palabras[i + j]["text"]
+
+                            # 🔥 limpiar saltos de línea
+                            siguiente = siguiente.replace("\n", " ").replace("\r", " ").strip()
+
+                            # cortar si aparece otro bloque
                             if re.match(r'^\d+$', siguiente):
                                 break
 
                             if re.match(patron_codigo, siguiente):
                                 break
 
-                            if es_palabra_valida(siguiente):
+                            # 🔥 aceptar casi todo texto útil
+                            if len(siguiente) > 1:
                                 palabras_curso.append(siguiente)
 
+                    # 🔥 reconstrucción robusta
                     curso = " ".join(palabras_curso)
+                    curso = re.sub(r'\s+', ' ', curso).strip()
 
                     registros.append({
                         "catalogo": codigo,
@@ -159,11 +148,13 @@ if st.button("Validar Catálogos del informe"):
     else:
         pdf_bytes = pdf_file.getvalue()
         df_pdf = extraer_codigos_pdf(pdf_bytes)
+
         total_codigos = df_pdf["catalogo"].nunique()
         st.info(f"📊 Total de catálogos hallados: {total_codigos}")
         st.write("Detalle:", df_pdf["catalogo"].unique())
 
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
+        df_pdf["curso_norm"] = df_pdf["curso"].apply(normalizar)
 
         base = df_base[
             (df_base["Subgrado"]==subgrado) & 
@@ -195,7 +186,6 @@ if st.button("Validar Catálogos del informe"):
             for _, row in errores.iterrows():
                 curso_pdf = normalizar(row["curso"])
 
-                # 🔥 SOLO COINCIDENCIA EXACTA
                 matches_exactos = base[base["curso_norm"] == curso_pdf]
 
                 sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
