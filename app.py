@@ -13,7 +13,7 @@ logo = Image.open("logo.png")
 st.image(logo, width=400)
 
 # ----------------------------
-# FONDO
+# ESTILOS (BOTÓN CORREGIDO)
 # ----------------------------
 page_bg_style = '''
 <style>
@@ -30,13 +30,27 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-.stButton>button {
+/* BOTÓN */
+.stButton > button {
     background-color: #a81e35 !important;
+    color: white !important;
     border-radius: 8px !important;
     border: none !important;
-    padding: 0.35em 0.75em !important;
+    padding: 8px 16px !important;
     font-weight: bold !important;
-    color: #ffffff !important;
+    font-size: 14px !important;
+}
+
+/* HOVER */
+.stButton > button:hover {
+    background-color: #000000 !important;
+    color: white !important;
+}
+
+/* 🔥 TEXTO DEL BOTÓN (FIX REAL) */
+.stButton > button div {
+    color: white !important;
+    font-weight: bold !important;
 }
 </style>
 '''
@@ -53,7 +67,7 @@ def normalizar(txt):
     return txt
 
 # ----------------------------
-# EXTRAER SOLO CÓDIGOS (SIN CURSO)
+# EXTRAER CÓDIGOS PDF
 # ----------------------------
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
@@ -127,15 +141,13 @@ if st.button("Validar Catálogos del informe"):
 
     df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
 
-    # 🔥 BASE FILTRADA (VALIDACIÓN)
+    # 🔥 BASE FILTRADA
     base = df_base[
         (df_base["Subgrado"]==subgrado) &
         (df_base["Descr"]==carrera)
     ].copy()
 
-    base["catalogo_norm"] = base["catalogo_norm"]
-
-    # 🔥 ERRORES = NO EXISTE EN LA CARRERA
+    # 🔥 ERRORES
     errores = df_pdf[
         ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
     ]
@@ -157,7 +169,7 @@ if st.button("Validar Catálogos del informe"):
 
             codigo = row["catalogo"]
 
-            # 🔥 CURSO DESDE TODO EL EXCEL (CLAVE)
+            # 🔥 CURSO DESDE TODO EL EXCEL
             curso_df = df_base[
                 df_base["catalogo_norm"] == row["catalogo_norm"]
             ]["Nom_Largo"]
@@ -167,7 +179,7 @@ if st.button("Validar Catálogos del informe"):
             else:
                 curso_real = "No encontrado"
 
-            # 🔥 COINCIDENCIAS SOLO EN BASE FILTRADA
+            # 🔥 COINCIDENCIAS EN BASE FILTRADA
             matches = base[
                 base["Nom_Largo"] == curso_real
             ]
