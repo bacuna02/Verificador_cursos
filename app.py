@@ -95,34 +95,38 @@ def extraer_codigos_pdf(pdf_bytes):
 
                 if match:
                     codigo = match.group()
-                    curso = ""
 
                     j = i + 1
-                    ultimo_valido = ""
+                    candidatos = []
 
                     while j < len(lineas):
                         siguiente = lineas[j]
 
+                        # detener si aparece otro código
                         if re.search(patron_codigo, siguiente):
                             break
 
+                        # detener si aparece texto basura
                         if any(p in siguiente.lower() for p in palabras_corte):
                             break
 
+                        # ignorar encabezados
                         if siguiente.lower() in ["plan", "código", "curso"]:
                             j += 1
                             continue
 
+                        # ignorar números
                         if re.fullmatch(r'[\d\s]+', siguiente):
                             j += 1
                             continue
 
                         if len(siguiente) > 5:
-                            ultimo_valido = siguiente
+                            candidatos.append(siguiente)
 
                         j += 1
 
-                    curso = ultimo_valido
+                    # 🔥 CLAVE: tomar SOLO el último (columna derecha)
+                    curso = candidatos[-1] if candidatos else ""
 
                     registros.append({
                         "catalogo": codigo,
@@ -137,7 +141,6 @@ def extraer_codigos_pdf(pdf_bytes):
         return pd.DataFrame(columns=["catalogo", "curso"])
 
     return pd.DataFrame(registros)
-
 
 # ----------------------------
 # TÍTULO
