@@ -67,6 +67,8 @@ def normalizar(txt):
     txt = re.sub(r'\s+', ' ', txt)
     return txt
 
+
+# 🔥 FUNCIÓN CORREGIDA
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
@@ -75,40 +77,53 @@ def extraer_codigos_pdf(pdf_bytes):
         for pagina in pdf.pages:
 
             texto = pagina.extract_text()
-
             if not texto:
                 continue
 
-            # dividir por líneas reales
             lineas = texto.split("\n")
 
-            for linea in lineas:
-                linea = linea.strip()
-
-                if not linea:
-                    continue
+            i = 0
+            while i < len(lineas):
+                linea = lineas[i].strip()
 
                 match = re.search(patron_codigo, linea)
 
                 if match:
                     codigo = match.group()
+                    curso_partes = []
 
-                    # todo lo demás es el curso
-                    # quitar código
-                    curso = linea.replace(codigo, "").strip()
+                    # 🔥 tomar hasta 3 líneas (maneja celdas grandes)
+                    for j in range(0, 4):
+                        if i + j < len(lineas):
+                            parte = lineas[i + j]
 
-                    # 🔥 eliminar bloques numéricos tipo "4 4 1" o "3 3 6"
-                    curso = re.sub(r'\b\d+\b', '', curso)
+                            # quitar código
+                            parte = parte.replace(codigo, "")
 
-                    # limpiar espacios múltiples
+                            # eliminar números (créditos)
+                            parte = re.sub(r'\b\d+\b', '', parte)
+
+                            parte = parte.strip()
+
+                            if parte:
+                                curso_partes.append(parte)
+
+                    curso = " ".join(curso_partes)
                     curso = re.sub(r'\s+', ' ', curso).strip()
 
-                    registros.append({
-                        "catalogo": codigo,
-                        "curso": curso
-                    })
+                    # 🔥 evitar registros vacíos
+                    if curso:
+                        registros.append({
+                            "catalogo": codigo,
+                            "curso": curso
+                        })
+
+                    i += 3  # saltar líneas ya usadas
+                else:
+                    i += 1
 
     return pd.DataFrame(registros)
+
 
 # ----------------------------
 # TÍTULO
