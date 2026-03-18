@@ -154,14 +154,10 @@ if st.button("Validar Catálogos del informe"):
             (df_base["Descr"]==carrera)
         ].copy()
 
-        merge = df_pdf.merge(
-            df_base,  # 🔥 usamos TODO el Excel aquí
-            on="catalogo_norm",
-            how="left",
-            indicator=True
-        )
-
-        errores = merge[merge["_merge"]=="left_only"]
+# 🔥 VALIDACIÓN REAL CONTRA LA CARRERA
+        errores = df_pdf[
+            ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
+        ]
 
         if errores.empty:
             st.success("✅ Todo coincide correctamente")
