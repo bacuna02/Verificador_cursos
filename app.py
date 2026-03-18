@@ -96,7 +96,7 @@ def extraer_codigos_pdf(pdf_bytes):
 # UI
 # ----------------------------
 st.title("📘 Validación: Informe Académico")
-st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Coincidencias EXACTAS en Planes 2026")
+st.markdown("**Leyenda:** 🔴 Catálogo no coincide | 🟢 Coincidencias en Planes 2026")
 
 # ----------------------------
 # CARGAR EXCEL
