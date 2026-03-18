@@ -37,19 +37,22 @@ h1, h2, h3, h4, h5, h6, p, label {
     border: none !important;
     padding: 8px 16px !important;
     font-weight: bold !important;
+    color: white !important; /* 🔥 clave */
 }
 
-/* 🔥 TEXTO SIEMPRE VISIBLE */
-.stButton > button span {
+/* 🔥 FORZAR TEXTO (TODAS LAS CAPAS) */
+.stButton > button * {
     color: white !important;
+    fill: white !important;
 }
 
 /* HOVER */
 .stButton > button:hover {
     background-color: #000000 !important;
+    color: white !important;
 }
 
-.stButton > button:hover span {
+.stButton > button:hover * {
     color: white !important;
 }
 </style>
