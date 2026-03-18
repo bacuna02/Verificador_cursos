@@ -163,6 +163,11 @@ if st.button("Validar Catálogos del informe"):
     else:
         st.warning(f"⚠️ {len(errores)} catálogos no corresponden.")
 
+        # 🔥 LEYENDA AQUÍ
+        st.markdown("**Leyenda:** 🔴 Catálogo no coincide | 🟢 Coincidencias en Planes 2026")
+
+    html = "<table style='border-collapse: collapse; width:100%;'>"
+
         html = "<table style='border-collapse: collapse; width:100%;'>"
         html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
         html += "<th style='border:1px solid black;'>Curso</th>"
