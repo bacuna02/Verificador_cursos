@@ -83,7 +83,7 @@ def extraer_codigos_pdf(pdf_bytes):
             for codigo in codigos:
                 registros.append({
                     "catalogo": codigo,
-                    "curso": ""  # 🔥 ya NO usamos el curso del PDF
+                    "curso": ""
                 })
 
     if not registros:
@@ -103,6 +103,7 @@ st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Coincidencias EXACTAS en
 try:
     df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
     df_base.columns = df_base.columns.str.strip()
+    df_base["catalogo_norm"] = df_base["Catálogo"].apply(normalizar)
     st.success("✅ Base de datos cargada correctamente")
 except FileNotFoundError:
     st.error("No se encontró 'planes_cursos_2026_v03.xlsx'.")
@@ -147,15 +148,14 @@ if st.button("Validar Catálogos del informe"):
 
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
 
+        # 🔥 BASE FILTRADA (para validación)
         base = df_base[
             (df_base["Subgrado"]==subgrado) & 
             (df_base["Descr"]==carrera)
         ].copy()
 
-        base["catalogo_norm"] = base["Catálogo"].apply(normalizar)
-
         merge = df_pdf.merge(
-            base,
+            df_base,  # 🔥 usamos TODO el Excel aquí
             on="catalogo_norm",
             how="left",
             indicator=True
@@ -177,12 +177,10 @@ if st.button("Validar Catálogos del informe"):
 
                 codigo = row["catalogo"]
 
-                curso_real = base[
-                    base["catalogo_norm"] == row["catalogo_norm"]
-                ]["Nom_Largo"]
+                # 🔥 curso correcto desde TODO el Excel
+                curso_real = row.get("Nom_Largo", "No encontrado")
 
-                curso_real = curso_real.iloc[0] if not curso_real.empty else "No encontrado"
-
+                # 🔥 coincidencias SOLO en el filtro
                 matches_exactos = base[
                     base["Nom_Largo"] == curso_real
                 ]
