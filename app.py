@@ -68,7 +68,7 @@ def normalizar(txt):
     return txt
 
 
-# 🔥 FUNCIÓN CORREGIDA
+# 🔥 FUNCIÓN CORRECTA (TABLAS)
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
@@ -76,51 +76,36 @@ def extraer_codigos_pdf(pdf_bytes):
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
 
-            texto = pagina.extract_text()
-            if not texto:
-                continue
+            tablas = pagina.extract_tables()
 
-            lineas = texto.split("\n")
+            for tabla in tablas:
+                for fila in tabla:
 
-            i = 0
-            while i < len(lineas):
-                linea = lineas[i].strip()
+                    if not fila:
+                        continue
 
-                match = re.search(patron_codigo, linea)
+                    # limpiar celdas
+                    fila = [str(c).strip() if c else "" for c in fila]
 
-                if match:
-                    codigo = match.group()
-                    curso_partes = []
+                    for i, celda in enumerate(fila):
+                        if re.match(patron_codigo, celda):
 
-                    # 🔥 tomar hasta 3 líneas (maneja celdas grandes)
-                    for j in range(0, 4):
-                        if i + j < len(lineas):
-                            parte = lineas[i + j]
+                            codigo = celda
 
-                            # quitar código
-                            parte = parte.replace(codigo, "")
+                            # tomar columna derecha como curso
+                            curso = ""
+                            if i + 1 < len(fila):
+                                curso = fila[i + 1]
 
-                            # eliminar números (créditos)
-                            parte = re.sub(r'\b\d+\b', '', parte)
+                            # limpiar números tipo créditos
+                            curso = re.sub(r'\b\d+\b', '', curso)
+                            curso = re.sub(r'\s+', ' ', curso).strip()
 
-                            parte = parte.strip()
-
-                            if parte:
-                                curso_partes.append(parte)
-
-                    curso = " ".join(curso_partes)
-                    curso = re.sub(r'\s+', ' ', curso).strip()
-
-                    # 🔥 evitar registros vacíos
-                    if curso:
-                        registros.append({
-                            "catalogo": codigo,
-                            "curso": curso
-                        })
-
-                    i += 3  # saltar líneas ya usadas
-                else:
-                    i += 1
+                            if curso:
+                                registros.append({
+                                    "catalogo": codigo,
+                                    "curso": curso
+                                })
 
     return pd.DataFrame(registros)
 
