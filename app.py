@@ -165,7 +165,7 @@ if st.button("Validar Catálogos del informe"):
 
         html = "<table style='border-collapse: collapse; width:100%;'>"
         html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
-        html += "<th style='border:1px solid black;'>Curso (Correcto)</th>"
+        html += "<th style='border:1px solid black;'>Curso</th>"
         html += "<th style='border:1px solid black;'>Coincidencias EXACTAS</th></tr>"
 
         for _, row in errores.iterrows():
