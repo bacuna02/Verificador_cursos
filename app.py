@@ -73,75 +73,65 @@ def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
 
-    palabras_corte = [
-        "total", "convalidacion", "firma", "apellidos",
-        "nombres", "fecha", "coordinador", "director"
-    ]
-
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
 
-            texto = pagina.extract_text()
-            if not texto:
+            words = pagina.extract_words(use_text_flow=True)
+
+            if not words:
                 continue
 
-            lineas = [l.strip() for l in texto.split("\n") if l.strip()]
+            # 🔥 separar izquierda y derecha por posición X
+            izquierda = []
+            derecha = []
 
-            i = 0
-            while i < len(lineas):
-                linea = lineas[i]
+            for w in words:
+                if w["x0"] < pagina.width * 0.45:
+                    izquierda.append(w)
+                else:
+                    derecha.append(w)
 
+            # reconstruir líneas izquierda
+            lineas_izq = {}
+            for w in izquierda:
+                top = round(w["top"])
+                lineas_izq.setdefault(top, []).append(w["text"])
+
+            lineas_izq = [" ".join(v) for k, v in sorted(lineas_izq.items())]
+
+            # reconstruir líneas derecha
+            lineas_der = {}
+            for w in derecha:
+                top = round(w["top"])
+                lineas_der.setdefault(top, []).append(w["text"])
+
+            lineas_der = [" ".join(v) for k, v in sorted(lineas_der.items())]
+
+            # 🔥 buscar códigos en izquierda
+            for i, linea in enumerate(lineas_izq):
                 match = re.search(patron_codigo, linea)
 
                 if match:
                     codigo = match.group()
 
-                    j = i + 1
-                    candidatos = []
+                    # 🔥 tomar misma posición en derecha
+                    curso = ""
+                    if i < len(lineas_der):
+                        curso = lineas_der[i]
 
-                    while j < len(lineas):
-                        siguiente = lineas[j]
-
-                        # detener si aparece otro código
-                        if re.search(patron_codigo, siguiente):
-                            break
-
-                        # detener si aparece texto basura
-                        if any(p in siguiente.lower() for p in palabras_corte):
-                            break
-
-                        # ignorar encabezados
-                        if siguiente.lower() in ["plan", "código", "curso"]:
-                            j += 1
-                            continue
-
-                        # ignorar números
-                        if re.fullmatch(r'[\d\s]+', siguiente):
-                            j += 1
-                            continue
-
-                        if len(siguiente) > 5:
-                            candidatos.append(siguiente)
-
-                        j += 1
-
-                    # 🔥 CLAVE: tomar SOLO el último (columna derecha)
-                    curso = candidatos[-1] if candidatos else ""
+                    # limpiar números tipo "4 4 1"
+                    curso = re.sub(r'\b\d+\b', '', curso)
+                    curso = re.sub(r'\s+', ' ', curso).strip()
 
                     registros.append({
                         "catalogo": codigo,
                         "curso": curso
                     })
 
-                    i = j
-                else:
-                    i += 1
-
     if not registros:
         return pd.DataFrame(columns=["catalogo", "curso"])
 
     return pd.DataFrame(registros)
-
 # ----------------------------
 # TÍTULO
 # ----------------------------
