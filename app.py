@@ -161,7 +161,7 @@ if st.button("Validar Catálogos del informe"):
     if errores.empty:
         st.success("✅ Todo coincide correctamente")
     else:
-        st.warning(f"⚠️ {len(errores)} cursos no pertenecen a la carrera")
+        st.warning(f"⚠️ {len(errores)} catálogos no corresponden.")
 
         html = "<table style='border-collapse: collapse; width:100%;'>"
         html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
