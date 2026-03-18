@@ -69,69 +69,82 @@ def normalizar(txt):
 
 
 # 🔥 FUNCIÓN CORREGIDA (ÚNICO CAMBIO REAL)
+
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
 
+    palabras_basura = [
+        "plan", "código", "curso", "total", "firma",
+        "apellidos", "nombres", "fecha", "director",
+        "coordinador", "convalidacion"
+    ]
+
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
 
-            words = pagina.extract_words(use_text_flow=True)
-
-            if not words:
+            texto = pagina.extract_text()
+            if not texto:
                 continue
 
-            # 🔥 separar izquierda y derecha por posición X
-            izquierda = []
-            derecha = []
+            lineas = [l.strip() for l in texto.split("\n") if l.strip()]
 
-            for w in words:
-                if w["x0"] < pagina.width * 0.45:
-                    izquierda.append(w)
-                else:
-                    derecha.append(w)
+            i = 0
+            while i < len(lineas):
+                linea = lineas[i]
 
-            # reconstruir líneas izquierda
-            lineas_izq = {}
-            for w in izquierda:
-                top = round(w["top"])
-                lineas_izq.setdefault(top, []).append(w["text"])
-
-            lineas_izq = [" ".join(v) for k, v in sorted(lineas_izq.items())]
-
-            # reconstruir líneas derecha
-            lineas_der = {}
-            for w in derecha:
-                top = round(w["top"])
-                lineas_der.setdefault(top, []).append(w["text"])
-
-            lineas_der = [" ".join(v) for k, v in sorted(lineas_der.items())]
-
-            # 🔥 buscar códigos en izquierda
-            for i, linea in enumerate(lineas_izq):
                 match = re.search(patron_codigo, linea)
 
                 if match:
                     codigo = match.group()
 
-                    # 🔥 tomar misma posición en derecha
-                    curso = ""
-                    if i < len(lineas_der):
-                        curso = lineas_der[i]
+                    candidatos = []
+                    j = i + 1
 
-                    # limpiar números tipo "4 4 1"
-                    curso = re.sub(r'\b\d+\b', '', curso)
-                    curso = re.sub(r'\s+', ' ', curso).strip()
+                    while j < len(lineas):
+                        siguiente = lineas[j]
+
+                        # parar si aparece otro código
+                        if re.search(patron_codigo, siguiente):
+                            break
+
+                        texto_limpio = siguiente.lower()
+
+                        # filtrar basura
+                        if any(p in texto_limpio for p in palabras_basura):
+                            j += 1
+                            continue
+
+                        # eliminar números sueltos
+                        limpio = re.sub(r'\b\d+\b', '', siguiente)
+                        limpio = re.sub(r'\s+', ' ', limpio).strip()
+
+                        # guardar candidatos válidos
+                        if len(limpio) > 10:
+                            candidatos.append(limpio)
+
+                        j += 1
+
+                    # 🔥 AQUÍ ESTÁ LA CLAVE:
+                    # elegir el candidato MÁS PROBABLE (más largo y limpio)
+                    curso = ""
+                    if candidatos:
+                        curso = max(candidatos, key=len)
 
                     registros.append({
                         "catalogo": codigo,
                         "curso": curso
                     })
 
+                    i = j
+                else:
+                    i += 1
+
     if not registros:
         return pd.DataFrame(columns=["catalogo", "curso"])
 
     return pd.DataFrame(registros)
+
 # ----------------------------
 # TÍTULO
 # ----------------------------
