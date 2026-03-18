@@ -68,7 +68,7 @@ def normalizar(txt):
     return txt
 
 
-# 🔥 FUNCIÓN CORRECTA (TABLAS)
+# 🔥 FUNCIÓN ROBUSTA
 def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
@@ -78,34 +78,66 @@ def extraer_codigos_pdf(pdf_bytes):
 
             tablas = pagina.extract_tables()
 
-            for tabla in tablas:
-                for fila in tabla:
+            # 🔥 INTENTO 1: TABLAS
+            if tablas:
+                for tabla in tablas:
+                    for fila in tabla:
 
-                    if not fila:
-                        continue
+                        if not fila:
+                            continue
 
-                    # limpiar celdas
-                    fila = [str(c).strip() if c else "" for c in fila]
+                        fila = [str(c).strip() if c else "" for c in fila]
 
-                    for i, celda in enumerate(fila):
-                        if re.match(patron_codigo, celda):
+                        for i, celda in enumerate(fila):
+                            if re.match(patron_codigo, celda):
 
-                            codigo = celda
+                                codigo = celda
+                                curso = ""
 
-                            # tomar columna derecha como curso
-                            curso = ""
-                            if i + 1 < len(fila):
-                                curso = fila[i + 1]
+                                if i + 1 < len(fila):
+                                    curso = fila[i + 1]
 
-                            # limpiar números tipo créditos
-                            curso = re.sub(r'\b\d+\b', '', curso)
-                            curso = re.sub(r'\s+', ' ', curso).strip()
+                                curso = re.sub(r'\b\d+\b', '', curso)
+                                curso = re.sub(r'\s+', ' ', curso).strip()
 
-                            if curso:
                                 registros.append({
                                     "catalogo": codigo,
                                     "curso": curso
                                 })
+
+            # 🔥 INTENTO 2: TEXTO (fallback)
+            else:
+                texto = pagina.extract_text()
+                if not texto:
+                    continue
+
+                lineas = texto.split("\n")
+
+                for i, linea in enumerate(lineas):
+                    linea = linea.strip()
+
+                    match = re.search(patron_codigo, linea)
+
+                    if match:
+                        codigo = match.group()
+
+                        curso = linea.replace(codigo, "").strip()
+
+                        # si está vacío, intentar línea siguiente
+                        if not curso and i + 1 < len(lineas):
+                            curso = lineas[i + 1]
+
+                        curso = re.sub(r'\b\d+\b', '', curso)
+                        curso = re.sub(r'\s+', ' ', curso).strip()
+
+                        registros.append({
+                            "catalogo": codigo,
+                            "curso": curso
+                        })
+
+    # 🔥 evitar error de DataFrame vacío
+    if not registros:
+        return pd.DataFrame(columns=["catalogo", "curso"])
 
     return pd.DataFrame(registros)
 
@@ -155,6 +187,11 @@ if st.button("Validar Catálogos del informe"):
     else:
         pdf_bytes = pdf_file.getvalue()
         df_pdf = extraer_codigos_pdf(pdf_bytes)
+
+        # 🔥 CONTROL DE ERROR
+        if df_pdf.empty:
+            st.error("❌ No se pudieron detectar cursos en el PDF. Intenta con otro formato.")
+            st.stop()
 
         total_codigos = df_pdf["catalogo"].nunique()
         st.info(f"📊 Total de catálogos hallados: {total_codigos}")
