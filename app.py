@@ -157,58 +157,59 @@ if st.button("Validar Catálogos del informe"):
     # ----------------------------
     # RESULTADOS
     # ----------------------------
-    if errores.empty:
-        st.success("✅ Todo coincide correctamente")
-    else:
-        st.warning(f"⚠️ {len(errores)} catálogos no corresponden.")
+# ----------------------------
+# RESULTADOS
+# ----------------------------
+if errores.empty:
+    st.success("✅ Todo coincide correctamente")
+else:
+    st.warning(f"⚠️ {len(errores)} catálogos no corresponden.")
 
-        # 🔥 LEYENDA AQUÍ
-        st.markdown("**Leyenda:** 🔴 Catálogo no coincide | 🟢 Coincidencias en Planes 2026")
+    # 🔥 LEYENDA AQUÍ (BIEN INDENTADA)
+    st.markdown("**Leyenda:** 🔴 Catálogo no coincide | 🟢 Coincidencias en Planes 2026")
 
     html = "<table style='border-collapse: collapse; width:100%;'>"
+    html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
+    html += "<th style='border:1px solid black;'>Curso</th>"
+    html += "<th style='border:1px solid black;'>Coincidencias EXACTAS</th></tr>"
 
-        html = "<table style='border-collapse: collapse; width:100%;'>"
-        html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
-        html += "<th style='border:1px solid black;'>Curso</th>"
-        html += "<th style='border:1px solid black;'>Coincidencias EXACTAS</th></tr>"
+    for _, row in errores.iterrows():
 
-        for _, row in errores.iterrows():
+        codigo = row["catalogo"]
 
-            codigo = row["catalogo"]
+        # 🔥 CURSO DESDE TODO EL EXCEL
+        curso_df = df_base[
+            df_base["catalogo_norm"] == row["catalogo_norm"]
+        ]["Nom_Largo"]
 
-            # 🔥 CURSO DESDE TODO EL EXCEL
-            curso_df = df_base[
-                df_base["catalogo_norm"] == row["catalogo_norm"]
-            ]["Nom_Largo"]
+        if not curso_df.empty:
+            curso_real = curso_df.iloc[0]
+        else:
+            curso_real = "No encontrado"
 
-            if not curso_df.empty:
-                curso_real = curso_df.iloc[0]
-            else:
-                curso_real = "No encontrado"
+        # 🔥 COINCIDENCIAS EN BASE FILTRADA
+        matches = base[
+            base["Nom_Largo"] == curso_real
+        ]
 
-            # 🔥 COINCIDENCIAS EN BASE FILTRADA
-            matches = base[
-                base["Nom_Largo"] == curso_real
-            ]
+        sugerencias_html = "<table style='width:100%;'>"
+        sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
 
-            sugerencias_html = "<table style='width:100%;'>"
-            sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
+        for _, r in matches.iterrows():
+            sugerencias_html += "<tr>"
+            sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
+            sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
+            sugerencias_html += f"<td>{r.get('Nom_Largo','')}</td>"
+            sugerencias_html += "</tr>"
 
-            for _, r in matches.iterrows():
-                sugerencias_html += "<tr>"
-                sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
-                sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
-                sugerencias_html += f"<td>{r.get('Nom_Largo','')}</td>"
-                sugerencias_html += "</tr>"
+        sugerencias_html += "</table>"
 
-            sugerencias_html += "</table>"
+        html += "<tr>"
+        html += f"<td style='background:#ffc7ce;'>{codigo}</td>"
+        html += f"<td style='background:#ffc7ce;'>{curso_real}</td>"
+        html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
+        html += "</tr>"
 
-            html += "<tr>"
-            html += f"<td style='background:#ffc7ce;'>{codigo}</td>"
-            html += f"<td style='background:#ffc7ce;'>{curso_real}</td>"
-            html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
-            html += "</tr>"
+    html += "</table>"
 
-        html += "</table>"
-
-        st.markdown(html, unsafe_allow_html=True)
+    st.markdown(html, unsafe_allow_html=True)
