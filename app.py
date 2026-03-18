@@ -94,8 +94,14 @@ def extraer_codigos_pdf(pdf_bytes):
                     codigo = match.group()
 
                     # todo lo demás es el curso
+                    # quitar código
                     curso = linea.replace(codigo, "").strip()
-                    curso = re.sub(r'\s+', ' ', curso)
+
+                    # 🔥 eliminar bloques numéricos tipo "4 4 1" o "3 3 6"
+                    curso = re.sub(r'\b\d+\b', '', curso)
+
+                    # limpiar espacios múltiples
+                    curso = re.sub(r'\s+', ' ', curso).strip()
 
                     registros.append({
                         "catalogo": codigo,
