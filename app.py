@@ -1,3 +1,132 @@
+import streamlit as st
+import pandas as pd
+import pdfplumber
+import io
+import re
+from unidecode import unidecode
+from PIL import Image
+
+# ----------------------------
+# LOGO
+# ----------------------------
+logo = Image.open("logo.png")
+st.image(logo, width=400)
+
+# ----------------------------
+# FONDO DEGRADADO MODERNO
+# ----------------------------
+page_bg_style = '''
+<style>
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(to bottom right, #eaeaea, #ffffff);
+    background-attachment: fixed;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #eaeaea;
+}
+
+h1, h2, h3, h4, h5, h6, p, label {
+    color: #a81e35;
+}
+
+.stButton>button {
+    background-color: #a81e35 !important;
+    border-radius: 8px !important;
+    border: none !important;
+    padding: 0.35em 0.75em !important;
+    font-weight: bold !important;
+    color: #ffffff !important;
+}
+
+.stButton>button:hover {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+.stButton>button * {
+    all: unset;
+    color: #ffffff !important;
+    font-weight: bold !important;
+    font-family: inherit !important;
+    text-align: center;
+    display: inline-block;
+}
+</style>
+'''
+
+st.markdown(page_bg_style, unsafe_allow_html=True)
+
+# ----------------------------
+# FUNCIONES AUXILIARES
+# ----------------------------
+def normalizar(txt):
+    txt = str(txt)
+    txt = txt.replace("\n", " ").replace("\r", " ")
+    txt = unidecode(txt.lower().strip())
+    txt = re.sub(r'\s+', ' ', txt)
+    return txt
+
+
+def extraer_codigos_pdf(pdf_bytes):
+    registros = []
+    patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
+
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        for pagina in pdf.pages:
+            texto = pagina.extract_text()
+            if not texto:
+                continue
+
+            codigos = re.findall(patron_codigo, texto)
+
+            for codigo in codigos:
+                registros.append({
+                    "catalogo": codigo,
+                    "curso": ""  # 🔥 ya NO usamos el curso del PDF
+                })
+
+    if not registros:
+        return pd.DataFrame(columns=["catalogo", "curso"])
+
+    return pd.DataFrame(registros)
+
+# ----------------------------
+# TÍTULO
+# ----------------------------
+st.title("📘 Validación: Informe Académico")
+st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Coincidencias EXACTAS en Planes 2026")
+
+# ----------------------------
+# CARGAR EXCEL
+# ----------------------------
+try:
+    df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
+    df_base.columns = df_base.columns.str.strip()
+    st.success("✅ Base de datos cargada correctamente")
+except FileNotFoundError:
+    st.error("No se encontró 'planes_cursos_2026_v03.xlsx'.")
+    st.stop()
+
+# ----------------------------
+# SELECTORES
+# ----------------------------
+subgrados = sorted(df_base["Subgrado"].dropna().unique())
+subgrado = st.selectbox("Seleccione Subgrado", [""] + subgrados)
+
+carrera = ""
+if subgrado:
+    carreras = sorted(df_base[df_base["Subgrado"]==subgrado]["Descr"].dropna().unique())
+    carrera = st.selectbox("Seleccione Carrera", [""] + list(carreras))
+
+# ----------------------------
+# SUBIR PDF
+# ----------------------------
+pdf_file = st.file_uploader(
+    "📂 Selecciona o arrastra tu PDF aquí",
+    type=["pdf"]
+)
+
 # ----------------------------
 # BOTÓN
 # ----------------------------
@@ -9,7 +138,7 @@ if st.button("Validar Catálogos del informe"):
         df_pdf = extraer_codigos_pdf(pdf_bytes)
 
         if df_pdf.empty:
-            st.error("❌ No se pudieron detectar cursos en el PDF.")
+            st.error("❌ No se pudieron detectar códigos en el PDF.")
             st.stop()
 
         total_codigos = df_pdf["catalogo"].nunique()
@@ -48,15 +177,12 @@ if st.button("Validar Catálogos del informe"):
 
                 codigo = row["catalogo"]
 
-                # 🔥 AQUÍ ESTÁ LA CLAVE
-                # buscar en Excel el curso correcto por código
                 curso_real = base[
                     base["catalogo_norm"] == row["catalogo_norm"]
                 ]["Nom_Largo"]
 
                 curso_real = curso_real.iloc[0] if not curso_real.empty else "No encontrado"
 
-                # coincidencias exactas (ahora sí reales)
                 matches_exactos = base[
                     base["Nom_Largo"] == curso_real
                 ]
