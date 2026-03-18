@@ -73,6 +73,11 @@ def extraer_codigos_pdf(pdf_bytes):
     registros = []
     patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
 
+    palabras_corte = [
+        "total", "convalidacion", "firma", "apellidos",
+        "nombres", "fecha", "coordinador", "director"
+    ]
+
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for pagina in pdf.pages:
 
@@ -80,15 +85,11 @@ def extraer_codigos_pdf(pdf_bytes):
             if not texto:
                 continue
 
-            lineas = texto.split("\n")
+            lineas = [l.strip() for l in texto.split("\n") if l.strip()]
 
             i = 0
             while i < len(lineas):
-                linea = lineas[i].strip()
-
-                if not linea:
-                    i += 1
-                    continue
+                linea = lineas[i]
 
                 match = re.search(patron_codigo, linea)
 
@@ -97,29 +98,31 @@ def extraer_codigos_pdf(pdf_bytes):
                     curso = ""
 
                     j = i + 1
-                    while j < len(lineas):
-                        siguiente = lineas[j].strip()
+                    ultimo_valido = ""
 
-                        # detener si aparece otro código
+                    while j < len(lineas):
+                        siguiente = lineas[j]
+
                         if re.search(patron_codigo, siguiente):
                             break
 
-                        # ignorar encabezados basura
+                        if any(p in siguiente.lower() for p in palabras_corte):
+                            break
+
                         if siguiente.lower() in ["plan", "código", "curso"]:
                             j += 1
                             continue
 
-                        # ignorar líneas numéricas
                         if re.fullmatch(r'[\d\s]+', siguiente):
                             j += 1
                             continue
 
-                        # acumular texto del curso
-                        curso += " " + siguiente
+                        if len(siguiente) > 5:
+                            ultimo_valido = siguiente
+
                         j += 1
 
-                    curso = re.sub(r'\b\d+\b', '', curso)
-                    curso = re.sub(r'\s+', ' ', curso).strip()
+                    curso = ultimo_valido
 
                     registros.append({
                         "catalogo": codigo,
