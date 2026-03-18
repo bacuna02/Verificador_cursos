@@ -1,186 +1,3 @@
-import streamlit as st
-import pandas as pd
-import pdfplumber
-import io
-import re
-from unidecode import unidecode
-from PIL import Image
-
-# ----------------------------
-# LOGO
-# ----------------------------
-logo = Image.open("logo.png")
-st.image(logo, width=400)
-
-# ----------------------------
-# FONDO DEGRADADO MODERNO
-# ----------------------------
-page_bg_style = '''
-<style>
-[data-testid="stAppViewContainer"] {
-    background: linear-gradient(to bottom right, #eaeaea, #ffffff);
-    background-attachment: fixed;
-}
-
-[data-testid="stSidebar"] {
-    background-color: #eaeaea;
-}
-
-h1, h2, h3, h4, h5, h6, p, label {
-    color: #a81e35;
-}
-
-.stButton>button {
-    background-color: #a81e35 !important;
-    border-radius: 8px !important;
-    border: none !important;
-    padding: 0.35em 0.75em !important;
-    font-weight: bold !important;
-    color: #ffffff !important;
-}
-
-.stButton>button:hover {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-.stButton>button * {
-    all: unset;
-    color: #ffffff !important;
-    font-weight: bold !important;
-    font-family: inherit !important;
-    text-align: center;
-    display: inline-block;
-}
-</style>
-'''
-
-st.markdown(page_bg_style, unsafe_allow_html=True)
-
-# ----------------------------
-# FUNCIONES AUXILIARES
-# ----------------------------
-def normalizar(txt):
-    txt = str(txt)
-    txt = txt.replace("\n", " ").replace("\r", " ")
-    txt = unidecode(txt.lower().strip())
-    txt = re.sub(r'\s+', ' ', txt)
-    return txt
-
-
-# 🔥 FUNCIÓN CORREGIDA (ÚNICO CAMBIO REAL)
-
-def extraer_codigos_pdf(pdf_bytes):
-    registros = []
-    patron_codigo = r'\b\d{6}[A-Z0-9]{2,4}\b'
-
-    palabras_basura = [
-        "plan", "código", "curso", "total", "firma",
-        "apellidos", "nombres", "fecha", "director",
-        "coordinador", "convalidacion"
-    ]
-
-    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-        for pagina in pdf.pages:
-
-            texto = pagina.extract_text()
-            if not texto:
-                continue
-
-            lineas = [l.strip() for l in texto.split("\n") if l.strip()]
-
-            i = 0
-            while i < len(lineas):
-                linea = lineas[i]
-
-                match = re.search(patron_codigo, linea)
-
-                if match:
-                    codigo = match.group()
-
-                    candidatos = []
-                    j = i + 1
-
-                    while j < len(lineas):
-                        siguiente = lineas[j]
-
-                        # parar si aparece otro código
-                        if re.search(patron_codigo, siguiente):
-                            break
-
-                        texto_limpio = siguiente.lower()
-
-                        # filtrar basura
-                        if any(p in texto_limpio for p in palabras_basura):
-                            j += 1
-                            continue
-
-                        # eliminar números sueltos
-                        limpio = re.sub(r'\b\d+\b', '', siguiente)
-                        limpio = re.sub(r'\s+', ' ', limpio).strip()
-
-                        # guardar candidatos válidos
-                        if len(limpio) > 10:
-                            candidatos.append(limpio)
-
-                        j += 1
-
-                    # 🔥 AQUÍ ESTÁ LA CLAVE:
-                    # elegir el candidato MÁS PROBABLE (más largo y limpio)
-                    curso = ""
-                    if candidatos:
-                        curso = max(candidatos, key=len)
-
-                    registros.append({
-                        "catalogo": codigo,
-                        "curso": curso
-                    })
-
-                    i = j
-                else:
-                    i += 1
-
-    if not registros:
-        return pd.DataFrame(columns=["catalogo", "curso"])
-
-    return pd.DataFrame(registros)
-
-# ----------------------------
-# TÍTULO
-# ----------------------------
-st.title("📘 Validación: Informe Académico")
-st.markdown("**Leyenda:** 🔴 Curso no coincide | 🟢 Coincidencias EXACTAS en Planes 2026")
-
-# ----------------------------
-# CARGAR EXCEL
-# ----------------------------
-try:
-    df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
-    df_base.columns = df_base.columns.str.strip()
-    st.success("✅ Base de datos cargada correctamente")
-except FileNotFoundError:
-    st.error("No se encontró 'planes_cursos_2026_v03.xlsx'.")
-    st.stop()
-
-# ----------------------------
-# SELECTORES
-# ----------------------------
-subgrados = sorted(df_base["Subgrado"].dropna().unique())
-subgrado = st.selectbox("Seleccione Subgrado", [""] + subgrados)
-
-carrera = ""
-if subgrado:
-    carreras = sorted(df_base[df_base["Subgrado"]==subgrado]["Descr"].dropna().unique())
-    carrera = st.selectbox("Seleccione Carrera", [""] + list(carreras))
-
-# ----------------------------
-# SUBIR PDF
-# ----------------------------
-pdf_file = st.file_uploader(
-    "📂 Selecciona o arrastra tu PDF aquí",
-    type=["pdf"]
-)
-
 # ----------------------------
 # BOTÓN
 # ----------------------------
@@ -200,7 +17,6 @@ if st.button("Validar Catálogos del informe"):
         st.write("Detalle:", df_pdf["catalogo"].unique())
 
         df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
-        df_pdf["curso_norm"] = df_pdf["curso"].apply(normalizar)
 
         base = df_base[
             (df_base["Subgrado"]==subgrado) & 
@@ -208,7 +24,6 @@ if st.button("Validar Catálogos del informe"):
         ].copy()
 
         base["catalogo_norm"] = base["Catálogo"].apply(normalizar)
-        base["curso_norm"] = base["Nom_Largo"].apply(normalizar)
 
         merge = df_pdf.merge(
             base,
@@ -226,13 +41,25 @@ if st.button("Validar Catálogos del informe"):
 
             html = "<table style='border-collapse: collapse; width:100%;'>"
             html += "<tr><th style='border: 1px solid black;'>Código PDF</th>"
-            html += "<th style='border: 1px solid black;'>Curso PDF</th>"
+            html += "<th style='border: 1px solid black;'>Curso (Correcto)</th>"
             html += "<th style='border: 1px solid black;'>Coincidencias EXACTAS</th></tr>"
 
             for _, row in errores.iterrows():
-                curso_pdf = normalizar(row["curso"])
 
-                matches_exactos = base[base["curso_norm"] == curso_pdf]
+                codigo = row["catalogo"]
+
+                # 🔥 AQUÍ ESTÁ LA CLAVE
+                # buscar en Excel el curso correcto por código
+                curso_real = base[
+                    base["catalogo_norm"] == row["catalogo_norm"]
+                ]["Nom_Largo"]
+
+                curso_real = curso_real.iloc[0] if not curso_real.empty else "No encontrado"
+
+                # coincidencias exactas (ahora sí reales)
+                matches_exactos = base[
+                    base["Nom_Largo"] == curso_real
+                ]
 
                 sugerencias_html = "<table style='border-collapse: collapse; width:100%;'>"
                 sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
@@ -247,8 +74,8 @@ if st.button("Validar Catálogos del informe"):
                 sugerencias_html += "</table>"
 
                 html += "<tr>"
-                html += f"<td style='background:#ffc7ce;'>{row['catalogo']}</td>"
-                html += f"<td style='background:#ffc7ce;'>{row['curso']}</td>"
+                html += f"<td style='background:#ffc7ce;'>{codigo}</td>"
+                html += f"<td style='background:#ffc7ce;'>{curso_real}</td>"
                 html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
                 html += "</tr>"
 
