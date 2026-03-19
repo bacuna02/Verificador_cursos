@@ -165,7 +165,7 @@ if st.button("Validar Catálogos"):
     else:
         st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
 
-        st.markdown("**Leyenda:** 🔴 Catálogo no coincide | 🟢 Coincidencias en Planes 2026")
+        st.markdown("**Leyenda:** 🔴 Catálogos no pertenecientes al Plan | 🟢 Coincidencias en La Base de Planes 2026")
 
         html = "<table style='border-collapse: collapse; width:100%;'>"
         html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
