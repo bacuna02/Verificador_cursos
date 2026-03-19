@@ -123,7 +123,7 @@ if subgrado:
 # ----------------------------
 # PDF
 # ----------------------------
-pdf_file = st.file_uploader("Carga el Informe de Convalidación", type=["pdf"])
+pdf_file = st.file_uploader("Carga el Informe de Convalidación:", type=["pdf"])
 
 # ----------------------------
 # BOTÓN
