@@ -172,7 +172,7 @@ if st.button("Validar Catálogos"):
     ]
 
     if not ingles_detectados.empty:
-        st.info(f"📚 Se detectaron cursos de INGLÉS en el PDF: {', '.join(ingles_detectados['catalogo'].tolist())}")
+        st.info(f"📚 Se detectaron los catálogos del curso de INGLÉS en el Informe de Convalidación siguientes: {', '.join(ingles_detectados['catalogo'].tolist())}")
 
     # ----------------------------
     # RESULTADOS
