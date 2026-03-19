@@ -104,7 +104,7 @@ try:
     df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
     df_base.columns = df_base.columns.str.strip()
     df_base["catalogo_norm"] = df_base["Catálogo"].apply(normalizar)
-    st.success("✅ Base de datos cargada correctamente")
+    st.success("✅ Base de Planes 2026 cargada correctamente")
 except:
     st.error("No se encontró el Excel.")
     st.stop()
