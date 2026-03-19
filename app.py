@@ -167,12 +167,16 @@ if st.button("Validar Catálogos"):
         "ingles v", "ingles vi", "ingles vii", "ingles viii"
     ]
 
-    ingles_detectados = df_pdf[
-        df_pdf["catalogo_norm"].isin(df_base[df_base["nom_largo_norm"].isin(cursos_ingles)]["catalogo_norm"])
-    ]
+    # Crear tabla de cursos de inglés detectados
+    ingles_detectados = df_pdf.merge(
+        df_base[df_base["nom_largo_norm"].isin(cursos_ingles)][["catalogo_norm", "Nom_Largo"]],
+        on="catalogo_norm",
+        how="inner"
+    )[["catalogo", "Nom_Largo"]]
 
     if not ingles_detectados.empty:
-        st.info(f"📚 Se detectaron los catálogos del curso de INGLÉS en el Informe de Convalidación siguientes: {', '.join(ingles_detectados['catalogo'].tolist())}")
+        st.markdown("📚 **Cursos de INGLÉS detectados en el PDF:**")
+        st.table(ingles_detectados.rename(columns={"catalogo": "Código PDF", "Nom_Largo": "Curso"}))
 
     # ----------------------------
     # RESULTADOS
