@@ -128,7 +128,7 @@ pdf_file = st.file_uploader("Carga el Informe de Convalidación:", type=["pdf"])
 # ----------------------------
 # BOTÓN
 # ----------------------------
-if st.button("Validar Catálogos del informe"):
+if st.button("Validar Catálogos"):
 
     if not subgrado or not carrera or pdf_file is None:
         st.error("Completa todos los campos")
