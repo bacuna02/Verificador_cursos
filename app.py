@@ -113,12 +113,12 @@ except:
 # FILTROS
 # ----------------------------
 subgrados = sorted(df_base["Subgrado"].dropna().unique())
-subgrado = st.selectbox("Seleccione Subgrado", [""] + subgrados)
+subgrado = st.selectbox("Seleccione Subgrado:", [""] + subgrados)
 
 carrera = ""
 if subgrado:
     carreras = sorted(df_base[df_base["Subgrado"]==subgrado]["Descr"].dropna().unique())
-    carrera = st.selectbox("Seleccione Carrera", [""] + list(carreras))
+    carrera = st.selectbox("Seleccione Carrera:", [""] + list(carreras))
 
 # ----------------------------
 # PDF
