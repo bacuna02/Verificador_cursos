@@ -176,9 +176,9 @@ if st.button("Validar Catálogos"):
 
     # Mostrar tabla solo si hay resultados
     if not ingles_detectados.empty:
-        st.markdown("📚 **Cursos de INGLÉS detectados en el PDF:**")
+        st.markdown("📚 **Cursos de INGLÉS encontrados en el Informe de Convalidación:**")
         st.dataframe(
-            ingles_detectados.rename(columns={"catalogo": "Código PDF", "Nom_Largo": "Curso"})
+            ingles_detectados.rename(columns={"catalogo": "Catálogo", "Nom_Largo": "Curso"})
                             .drop_duplicates(),
             hide_index=True  # <--- esto oculta la columna de índice
         )
