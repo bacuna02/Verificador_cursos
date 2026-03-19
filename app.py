@@ -104,6 +104,7 @@ try:
     df_base = pd.read_excel("planes_cursos_2026_v03.xlsx")
     df_base.columns = df_base.columns.str.strip()
     df_base["catalogo_norm"] = df_base["Catálogo"].apply(normalizar)
+    df_base["nom_largo_norm"] = df_base["Nom_Largo"].apply(normalizar)
     st.success("✅ Base de Planes 2026 cargada correctamente")
 except:
     st.error("No se encontró el Excel.")
@@ -156,6 +157,22 @@ if st.button("Validar Catálogos"):
     errores = df_pdf[
         ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
     ]
+
+    # ----------------------------
+    # DETECTAR CURSOS DE INGLÉS
+    # ----------------------------
+    cursos_ingles = [
+        "ingles i", "ingles ii", "ingles iii", "ingles iv",
+        "ingles maritimo i", "ingles maritimo ii",
+        "ingles v", "ingles vi", "ingles vii", "ingles viii"
+    ]
+
+    ingles_detectados = df_pdf[
+        df_pdf["catalogo_norm"].isin(df_base[df_base["nom_largo_norm"].isin(cursos_ingles)]["catalogo_norm"])
+    ]
+
+    if not ingles_detectados.empty:
+        st.info(f"📚 Se detectaron cursos de INGLÉS en el PDF: {', '.join(ingles_detectados['catalogo'].tolist())}")
 
     # ----------------------------
     # RESULTADOS
