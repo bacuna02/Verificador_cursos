@@ -186,9 +186,9 @@ if st.button("Validar Catálogos"):
     # RESULTADOS
     # ----------------------------
     if errores.empty:
-        st.success(f"✅ Se identificaron {total_catalogos} catálogos y todos corresponden correctamente")
+        st.success(f"✅ Se identificaron {total_catalogos} catálogos en total y todos corresponden correctamente")
     else:
-        st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
+        st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos en total, de los cuales {len(errores)} no corresponden al Plan")
 
         st.markdown("**Leyenda:** 🔴 Catálogos no pertenecientes al Plan | 🟢 Coincidencias en La Base de Planes 2026")
 
