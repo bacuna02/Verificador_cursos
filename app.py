@@ -176,7 +176,7 @@ if st.button("Validar Catálogos"):
 
     # Mostrar tabla solo si hay resultados
     if not ingles_detectados.empty:
-        st.markdown("📚 **Cursos de INGLÉS detectados en el Informe de Convalidación:**")
+        st.markdown("📚 **Cursos de INGLÉS encontrados en el Informe de Convalidación:**")
         st.table(ingles_detectados.rename(columns={"catalogo": "Catálogo", "Nom_Largo": "Curso"}))
 
     # ----------------------------
