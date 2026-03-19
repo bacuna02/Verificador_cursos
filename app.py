@@ -167,13 +167,14 @@ if st.button("Validar Catálogos"):
         "ingles v", "ingles vi", "ingles vii", "ingles viii"
     ]
 
-    # Crear tabla de cursos de inglés detectados
+    # Filtrar solo los códigos del PDF que corresponden a cursos de inglés
     ingles_detectados = df_pdf.merge(
         df_base[df_base["nom_largo_norm"].isin(cursos_ingles)][["catalogo_norm", "Nom_Largo"]],
         on="catalogo_norm",
         how="inner"
-    )[["catalogo", "Nom_Largo"]]
+    )[["catalogo", "Nom_Largo"]].drop_duplicates()
 
+    # Mostrar tabla solo si hay resultados
     if not ingles_detectados.empty:
         st.markdown("📚 **Cursos de INGLÉS detectados en el PDF:**")
         st.table(ingles_detectados.rename(columns={"catalogo": "Código PDF", "Nom_Largo": "Curso"}))
