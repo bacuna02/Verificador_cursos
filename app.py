@@ -165,10 +165,10 @@ if st.button("Validar Catálogos"):
         html = "<table style='border-collapse: collapse; width:100%;'>"
         html += """
         <tr>
-            <th style='border:1px solid #999;'>Código PDF</th>
+            <th style='border:1px solid #999;'>Catálogo</th>
             <th style='border:1px solid #999;'>Curso</th>
             <th style='border:1px solid #999;'>Plan</th>
-            <th style='border:1px solid #999;'>Código</th>
+            <th style='border:1px solid #999;'>Catálogo</th>
             <th style='border:1px solid #999;'>Curso</th>
         </tr>
         """
