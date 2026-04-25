@@ -162,16 +162,22 @@ if st.button("Validar Catálogos"):
     else:
         st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
 
-        html = "<table style='border-collapse: collapse; width:100%;'>"
-        html += """
-        <tr>
-            <th style='border:1px solid #999;'>Catálogo</th>
-            <th style='border:1px solid #999;'>Curso</th>
-            <th style='border:1px solid #999;'>Plan</th>
-            <th style='border:1px solid #999;'>Catálogo</th>
-            <th style='border:1px solid #999;'>Curso</th>
-        </tr>
-        """
+        html = "<table style='border-collapse: collapse; width:100%; table-layout:fixed;'>"
+
+        # 🔥 ENCABEZADO AGRUPADO
+        html += "<tr>"
+        html += "<th colspan='2' style='border:1px solid #999; background:#ffc7ce; text-align:center; font-weight:bold;'>CATÁLOGOS INCORRECTOS</th>"
+        html += "<th colspan='3' style='border:1px solid #999; background:#c6efce; text-align:center; font-weight:bold;'>COINCIDENCIAS ENCONTRADAS EN EL PLAN</th>"
+        html += "</tr>"
+
+        # 🔥 ENCABEZADO NORMAL
+        html += "<tr>"
+        html += "<th style='border:1px solid #999;'>Catálogo</th>"
+        html += "<th style='border:1px solid #999;'>Curso</th>"
+        html += "<th style='border:1px solid #999;'>Plan</th>"
+        html += "<th style='border:1px solid #999;'>Catálogo</th>"
+        html += "<th style='border:1px solid #999;'>Curso</th>"
+        html += "</tr>"
 
         for _, row in errores.iterrows():
 
@@ -190,13 +196,9 @@ if st.button("Validar Catálogos"):
             n = len(matches)
 
             if n == 0:
-                html += f"""
-                <tr>
-                    <td style='border:1px solid #999; background:#ffc7ce;'>{codigo}</td>
-                    <td style='border:1px solid #999; background:#ffc7ce;'>{curso_real}</td>
-                    <td colspan='3' style='border:1px solid #999;'>Sin coincidencias</td>
-                </tr>
-                """
+                html += f"<tr><td style='border:1px solid #999; background:#ffc7ce;'>{codigo}</td>"
+                html += f"<td style='border:1px solid #999; background:#ffc7ce;'>{curso_real}</td>"
+                html += "<td colspan='3' style='border:1px solid #999;'>Sin coincidencias</td></tr>"
                 continue
 
             first = True
@@ -238,10 +240,6 @@ if st.button("Validar Catálogos"):
 
         texto_copiable = df_final.to_csv(sep="\t", index=False)
 
-        st.text_area(
-            "",
-            texto_copiable,
-            height=200
-        )
+        st.text_area("", texto_copiable, height=200)
 
         st.caption("Selecciona todo (Ctrl + A) y copia (Ctrl + C)")
