@@ -5,6 +5,7 @@ import io
 import re
 from unidecode import unidecode
 from PIL import Image
+import streamlit.components.v1 as components
 
 # ----------------------------
 # LOGO
@@ -216,12 +217,37 @@ if st.button("Validar Catálogos"):
 
         st.markdown("### 📋 Copiar y pegar en Excel")
 
-        texto_copiable = df_final.to_csv(sep="\t", index=False)
+        texto_copiable = df_final.to_csv(sep="\t", index=False).strip()
 
-        st.text_area(
-            "",
-            texto_copiable,
-            height=200
-        )
+st.markdown("### 📋 Copiar y pegar en Excel")
 
-        st.caption("Selecciona todo (Ctrl + A) y copia (Ctrl + C)")
+components.html(f"""
+<textarea id="texto" style="width:100%; height:150px;">
+{texto_copiable}
+</textarea>
+
+<br>
+
+<button onclick="copiarTexto()" style="
+    background-color:#a81e35;
+    color:white;
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+">
+📋 Copiar al portapapeles
+</button>
+
+<script>
+function copiarTexto() {{
+    var copyText = document.getElementById("texto");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+
+    alert("Copiado al portapapeles ✅");
+}}
+</script>
+""", height=250)
