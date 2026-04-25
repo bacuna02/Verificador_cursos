@@ -214,7 +214,7 @@ if st.button("Validar Catálogos"):
     if resultados_finales:
         df_final = pd.DataFrame(resultados_finales).drop_duplicates()
 
-        st.markdown("### 📋 Listo para pegar en Zendesk")
+        st.markdown("### 📋 Listo para pegar en Zendesk :")
 
         texto_copiable = df_final.to_csv(sep="\t", index=False)
 
