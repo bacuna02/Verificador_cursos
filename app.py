@@ -152,7 +152,7 @@ if st.button("Validar Catálogos"):
         ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
     ]
 
-    # 🔥 NUEVO: lista para tabla final
+    # 🔥 lista para resultados finales
     resultados_finales = []
 
     # ----------------------------
@@ -185,7 +185,7 @@ if st.button("Validar Catálogos"):
 
             for _, r in matches.iterrows():
 
-                # 🔥 NUEVO: guardar resultado final
+                # 🔥 guardar resultado final
                 resultados_finales.append({
                     "Plan": r.get("Plan Acad", ""),
                     "Catálogo": r.get("Catálogo", ""),
@@ -210,18 +210,18 @@ if st.button("Validar Catálogos"):
 
         st.markdown(html, unsafe_allow_html=True)
 
-    # 🔥 NUEVO: MOSTRAR TABLA FINAL LIMPIA
+    # 🔥 RESULTADO FINAL SOLO PARA COPIAR
     if resultados_finales:
         df_final = pd.DataFrame(resultados_finales).drop_duplicates()
 
-        st.markdown("### 📋 Resultado final listo para copiar")
-
-        st.dataframe(df_final, hide_index=True)
+        st.markdown("### 📋 Copiar y pegar en Excel")
 
         texto_copiable = df_final.to_csv(sep="\t", index=False)
 
         st.text_area(
-            "Copiar y pegar en Excel:",
+            "",
             texto_copiable,
-            height=150
+            height=200
         )
+
+        st.caption("Selecciona todo (Ctrl + A) y copia (Ctrl + C)")
