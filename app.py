@@ -13,7 +13,7 @@ logo = Image.open("logo.png")
 st.image(logo, width=400)
 
 # ----------------------------
-# ESTILOS (BOTÓN CORREGIDO)
+# ESTILOS
 # ----------------------------
 page_bg_style = '''
 <style>
@@ -30,7 +30,6 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: #a81e35;
 }
 
-/* BOTÓN */
 .stButton > button {
     background-color: #a81e35 !important;
     border-radius: 8px !important;
@@ -40,13 +39,11 @@ h1, h2, h3, h4, h5, h6, p, label {
     color: white !important;
 }
 
-/* TEXTO BOTÓN */
 .stButton > button * {
     color: white !important;
     fill: white !important;
 }
 
-/* HOVER */
 .stButton > button:hover {
     background-color: #000000 !important;
     color: white !important;
@@ -144,58 +141,30 @@ if st.button("Validar Catálogos"):
 
     df_pdf["catalogo_norm"] = df_pdf["catalogo"].apply(normalizar)
 
-    # 🔥 TOTAL DE CATÁLOGOS DETECTADOS
     total_catalogos = df_pdf["catalogo"].nunique()
 
-    # 🔥 BASE FILTRADA
     base = df_base[
         (df_base["Subgrado"]==subgrado) &
         (df_base["Descr"]==carrera)
     ].copy()
 
-    # 🔥 ERRORES
     errores = df_pdf[
         ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
     ]
 
-    # ----------------------------
-    # DETECTAR CURSOS DE INGLÉS
-    # ----------------------------
-    cursos_ingles = [
-        "ingles i", "ingles ii", "ingles iii", "ingles iv",
-        "ingles maritimo i", "ingles maritimo ii",
-        "ingles v", "ingles vi", "ingles vii", "ingles viii"
-    ]
+    # 🔥 NUEVO: lista para tabla final
+    resultados_finales = []
 
-    # Filtrar solo los códigos del PDF que corresponden a cursos de inglés
-    ingles_detectados = df_pdf.merge(
-        df_base[df_base["nom_largo_norm"].isin(cursos_ingles)][["catalogo_norm", "Nom_Largo"]],
-        on="catalogo_norm",
-        how="inner"
-    )[["catalogo", "Nom_Largo"]].drop_duplicates()
-
-    # Mostrar tabla solo si hay resultados
-    if not ingles_detectados.empty:
-        st.markdown("📚 **Cursos de INGLÉS encontrados en el Informe de Convalidación:**")
-        st.dataframe(
-            ingles_detectados.rename(columns={"catalogo": "Catálogo", "Nom_Largo": "Curso"})
-                            .drop_duplicates(),
-            hide_index=True  # <--- esto oculta la columna de índice
-        )
     # ----------------------------
     # RESULTADOS
     # ----------------------------
     if errores.empty:
-        st.success(f"✅ Se identificaron {total_catalogos} catálogos en total y todos corresponden correctamente")
+        st.success(f"✅ Se identificaron {total_catalogos} catálogos y todos corresponden correctamente")
     else:
-        st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos en total, de los cuales {len(errores)} no corresponden al Plan")
-
-        st.markdown("**Leyenda:** 🔴 Catálogos no pertenecientes al Plan | 🟢 Coincidencias en La Base de Planes 2026")
+        st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
 
         html = "<table style='border-collapse: collapse; width:100%;'>"
-        html += "<tr><th style='border:1px solid black;'>Código PDF</th>"
-        html += "<th style='border:1px solid black;'>Curso</th>"
-        html += "<th style='border:1px solid black;'>Coincidencias EXACTAS</th></tr>"
+        html += "<tr><th>Código PDF</th><th>Curso</th><th>Coincidencias EXACTAS</th></tr>"
 
         for _, row in errores.iterrows():
 
@@ -205,10 +174,7 @@ if st.button("Validar Catálogos"):
                 df_base["catalogo_norm"] == row["catalogo_norm"]
             ]["Nom_Largo"]
 
-            if not curso_df.empty:
-                curso_real = curso_df.iloc[0]
-            else:
-                curso_real = "No encontrado"
+            curso_real = curso_df.iloc[0] if not curso_df.empty else "No encontrado"
 
             matches = base[
                 base["Nom_Largo"] == curso_real
@@ -218,6 +184,14 @@ if st.button("Validar Catálogos"):
             sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
 
             for _, r in matches.iterrows():
+
+                # 🔥 NUEVO: guardar resultado final
+                resultados_finales.append({
+                    "Plan": r.get("Plan Acad", ""),
+                    "Catálogo": r.get("Catálogo", ""),
+                    "Curso": r.get("Nom_Largo", "")
+                })
+
                 sugerencias_html += "<tr>"
                 sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
                 sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
@@ -235,3 +209,19 @@ if st.button("Validar Catálogos"):
         html += "</table>"
 
         st.markdown(html, unsafe_allow_html=True)
+
+    # 🔥 NUEVO: MOSTRAR TABLA FINAL LIMPIA
+    if resultados_finales:
+        df_final = pd.DataFrame(resultados_finales).drop_duplicates()
+
+        st.markdown("### 📋 Resultado final listo para copiar")
+
+        st.dataframe(df_final, hide_index=True)
+
+        texto_copiable = df_final.to_csv(sep="\t", index=False)
+
+        st.text_area(
+            "Copiar y pegar en Excel:",
+            texto_copiable,
+            height=150
+        )
