@@ -162,16 +162,30 @@ if st.button("Validar Catálogos"):
     else:
         st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
 
-        html = "<table style='border-collapse: collapse; width:100%;'>"
-        html += """
-        <tr>
-            <th style='border:1px solid #999;'>Catálogo</th>
-            <th style='border:1px solid #999;'>Curso</th>
-            <th style='border:1px solid #999;'>Plan</th>
-            <th style='border:1px solid #999;'>Catálogo</th>
-            <th style='border:1px solid #999;'>Curso</th>
-        </tr>
-        """
+html = "<table style='border-collapse: collapse; width:100%;'>"
+
+# 🔥 NUEVA FILA AGRUPADA
+html += """
+<tr>
+    <th colspan='2' style='border:1px solid #999; background:#f4b6b6; text-align:center;'>
+        CATÁLOGOS INCORRECTOS
+    </th>
+    <th colspan='3' style='border:1px solid #999; background:#b6d7a8; text-align:center;'>
+        COINCIDENCIAS ENCONTRADAS EN EL PLAN
+    </th>
+</tr>
+"""
+
+# 🔥 ENCABEZADOS NORMALES
+html += """
+<tr>
+    <th style='border:1px solid #999;'>Código PDF</th>
+    <th style='border:1px solid #999;'>Curso</th>
+    <th style='border:1px solid #999;'>Plan</th>
+    <th style='border:1px solid #999;'>Catálogo</th>
+    <th style='border:1px solid #999;'>Curso</th>
+</tr>
+"""
 
         for _, row in errores.iterrows():
 
