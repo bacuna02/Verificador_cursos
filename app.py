@@ -216,7 +216,7 @@ if st.button("Validar Catálogos"):
 
         st.markdown("### 📋 Copiar y pegar en Excel")
 
-        texto_copiable = df_final.to_csv(sep="\t", index=False)
+        texto_copiable = df_final.to_string(index=False)
 
         st.text_area(
             "",
