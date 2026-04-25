@@ -152,7 +152,6 @@ if st.button("Validar Catálogos"):
         ~df_pdf["catalogo_norm"].isin(base["catalogo_norm"])
     ]
 
-    # 🔥 lista para resultados finales
     resultados_finales = []
 
     # ----------------------------
@@ -164,7 +163,15 @@ if st.button("Validar Catálogos"):
         st.warning(f"⚠️ Se identificaron {total_catalogos} catálogos, de los cuales {len(errores)} no corresponden")
 
         html = "<table style='border-collapse: collapse; width:100%;'>"
-        html += "<tr><th>Código PDF</th><th>Curso</th><th>Coincidencias EXACTAS</th></tr>"
+        html += """
+        <tr>
+            <th style='border:1px solid #999;'>Código PDF</th>
+            <th style='border:1px solid #999;'>Curso</th>
+            <th style='border:1px solid #999;'>Plan</th>
+            <th style='border:1px solid #999;'>Código</th>
+            <th style='border:1px solid #999;'>Curso</th>
+        </tr>
+        """
 
         for _, row in errores.iterrows():
 
@@ -180,37 +187,50 @@ if st.button("Validar Catálogos"):
                 base["Nom_Largo"] == curso_real
             ]
 
-            sugerencias_html = "<table style='width:100%;'>"
-            sugerencias_html += "<tr><th>Plan</th><th>Código</th><th>Curso</th></tr>"
+            n = len(matches)
 
+            if n == 0:
+                html += f"""
+                <tr>
+                    <td style='border:1px solid #999; background:#ffc7ce;'>{codigo}</td>
+                    <td style='border:1px solid #999; background:#ffc7ce;'>{curso_real}</td>
+                    <td colspan='3' style='border:1px solid #999;'>Sin coincidencias</td>
+                </tr>
+                """
+                continue
+
+            first = True
             for _, r in matches.iterrows():
 
-                # 🔥 guardar resultado final
                 resultados_finales.append({
                     "Plan": r.get("Plan Acad", ""),
                     "Catálogo": r.get("Catálogo", ""),
                     "Curso": r.get("Nom_Largo", "")
                 })
 
-                sugerencias_html += "<tr>"
-                sugerencias_html += f"<td>{r.get('Plan Acad','')}</td>"
-                sugerencias_html += f"<td>{r.get('Catálogo','')}</td>"
-                sugerencias_html += f"<td>{r.get('Nom_Largo','')}</td>"
-                sugerencias_html += "</tr>"
-
-            sugerencias_html += "</table>"
-
-            html += "<tr>"
-            html += f"<td style='background:#ffc7ce;'>{codigo}</td>"
-            html += f"<td style='background:#ffc7ce;'>{curso_real}</td>"
-            html += f"<td style='background:#c6efce;'>{sugerencias_html}</td>"
-            html += "</tr>"
+                if first:
+                    html += "<tr>"
+                    html += f"<td rowspan='{n}' style='border:1px solid #999; background:#ffc7ce;'>{codigo}</td>"
+                    html += f"<td rowspan='{n}' style='border:1px solid #999; background:#ffc7ce;'>{curso_real}</td>"
+                    html += f"<td style='border:1px solid #999; background:#c6efce;'>{r.get('Plan Acad','')}</td>"
+                    html += f"<td style='border:1px solid #999; background:#c6efce;'>{r.get('Catálogo','')}</td>"
+                    html += f"<td style='border:1px solid #999; background:#c6efce;'>{r.get('Nom_Largo','')}</td>"
+                    html += "</tr>"
+                    first = False
+                else:
+                    html += "<tr>"
+                    html += f"<td style='border:1px solid #999; background:#c6efce;'>{r.get('Plan Acad','')}</td>"
+                    html += f"<td style='border:1px solid #999; background:#c6efce;'>{r.get('Catálogo','')}</td>"
+                    html += f"<td style='border:1px solid #999; background:#c6efce;'>{r.get('Nom_Largo','')}</td>"
+                    html += "</tr>"
 
         html += "</table>"
 
         st.markdown(html, unsafe_allow_html=True)
 
-    # 🔥 RESULTADO FINAL SOLO PARA COPIAR
+    # ----------------------------
+    # TEXTO PARA COPIAR
+    # ----------------------------
     if resultados_finales:
         df_final = pd.DataFrame(resultados_finales).drop_duplicates()
 
